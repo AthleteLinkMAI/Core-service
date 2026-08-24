@@ -28,18 +28,16 @@ public class RequestParticipant {
     @JoinColumn(name = "request_id")
     private ActivityRequest activityRequest;
 
-    @Column(nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, length = 20)
     private ParticipantRole role;
 
+    @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, length = 20)
     private ParticipantStatus status;
 
     @CreationTimestamp
-    @Column(updatable = false)
     private Instant joinedAt;
 }
