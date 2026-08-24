@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.locationtech.jts.geom.Point;
 import team.anonyms.athletelink.core_service.enums.RequestStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -41,7 +43,7 @@ public class ActivityRequest {
     @Column(nullable = false, columnDefinition = "geometry(Point,4326)")
     private Point locationPoint;
 
-    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, length = 20)
     private RequestStatus status;
 

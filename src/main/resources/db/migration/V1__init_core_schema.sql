@@ -1,5 +1,9 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
+CREATE TYPE request_status AS ENUM ('PLANNED', 'ACTIVE', 'CONFIRMATION', 'COMPLETED', 'CANCELLED', 'FROZEN');
+CREATE TYPE participant_role AS ENUM ('ORGANIZER', 'PLAYER');
+CREATE TYPE participant_status AS ENUM ('PENDING', 'ACCEPTED', 'KICKED', 'LEFT');
+
 CREATE TABLE sports (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -18,7 +22,7 @@ CREATE TABLE activity_requests (
     address_text VARCHAR(255) NOT NULL,
 
     location_point geometry(Point, 4326) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PLANNED',
+    status request_status NOT NULL DEFAULT 'PLANNED',
 
     organizer_id UUID NOT NULL,
 
@@ -32,8 +36,10 @@ CREATE TABLE request_participants (
     id UUID PRIMARY KEY,
     request_id UUID NOT NULL REFERENCES activity_requests(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
-    role VARCHAR(20) NOT NULL,
-    status VARCHAR(20) NOT NULL,
+    
+    role participant_role NOT NULL,
+    status participant_status NOT NULL,
+
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     UNIQUE (request_id, user_id)
