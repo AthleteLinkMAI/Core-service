@@ -1,3 +1,31 @@
 spring:
   application:
     name: core-service
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5433/core_db 
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
