@@ -1,10 +1,10 @@
-package team.anonyms.athletelink.core_service;
+package team.anonyms.athletelink.coreservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class CoreServiceApplicationTests {
+class MainTests {
 
 	@Test
 	void contextLoads() {
