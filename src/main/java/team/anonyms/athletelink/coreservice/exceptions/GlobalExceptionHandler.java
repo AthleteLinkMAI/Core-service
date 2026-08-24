@@ -1,4 +1,4 @@
-package team.anonyms.athletelink.core_service.exceptions;
+package team.anonyms.athletelink.coreservice.exceptions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -6,16 +6,16 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.core_service.dto.CreateActivityRequestDto;
-import team.anonyms.athletelink.core_service.entities.ActivityRequest;
-import team.anonyms.athletelink.core_service.entities.RequestParticipant;
-import team.anonyms.athletelink.core_service.entities.Sport;
-import team.anonyms.athletelink.core_service.enums.ParticipantRole;
-import team.anonyms.athletelink.core_service.enums.ParticipantStatus;
-import team.anonyms.athletelink.core_service.enums.RequestStatus;
-import team.anonyms.athletelink.core_service.repositories.ActivityRequestRepository;
-import team.anonyms.athletelink.core_service.repositories.RequestParticipantRepository;
-import team.anonyms.athletelink.core_service.repositories.SportRepository;
+import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
+import team.anonyms.athletelink.coreservice.entities.RequestParticipant;
+import team.anonyms.athletelink.coreservice.entities.Sport;
+import team.anonyms.athletelink.coreservice.enums.ParticipantRole;
+import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
+import team.anonyms.athletelink.coreservice.enums.RequestStatus;
+import team.anonyms.athletelink.coreservice.repositories.ActivityRequestRepository;
+import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepository;
+import team.anonyms.athletelink.coreservice.repositories.SportRepository;
 
 import java.util.UUID;
 

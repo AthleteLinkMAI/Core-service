@@ -3,8 +3,8 @@ package team.anonyms.athletelink.coreservice.entities;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import team.anonyms.athletelink.core_service.enums.ParticipantRole;
-import team.anonyms.athletelink.core_service.enums.ParticipantStatus;
+import team.anonyms.athletelink.coreservice.enums.ParticipantRole;
+import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 

@@ -1,4 +1,4 @@
-package team.anonyms.athletelink.core_service.controllers;
+package team.anonyms.athletelink.coreservice.controllers;
 
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import team.anonyms.athletelink.core_service.dto.CreateActivityRequestDto;
-import team.anonyms.athletelink.core_service.services.ActivityRequestService;
+import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
 import java.util.Map;
 import java.util.UUID;
