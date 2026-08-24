@@ -3,6 +3,7 @@ package team.anonyms.athletelink.coreservice.services;
 import org.springframework.stereotype.Service;
 import team.anonyms.athletelink.coreservice.entities.Sport;
 import team.anonyms.athletelink.coreservice.repositories.SportRepository;
+import team.anonyms.athletelink.coreservice.dto.SportDto;
 
 import java.util.List;
 
