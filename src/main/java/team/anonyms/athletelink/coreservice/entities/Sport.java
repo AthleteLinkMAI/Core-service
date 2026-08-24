@@ -16,8 +16,17 @@ public class Sport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Size(max = 50)
+    @NotBlank
     private String name;
+
+    @NotNull
     private Integer minPlayers;
+
+    @NotNull
     private Integer maxPlayers;
+
+    @Size(max = 255)
+    @NotBlank
     private String iconUrl;
 }

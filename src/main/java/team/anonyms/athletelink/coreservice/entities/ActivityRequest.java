@@ -24,22 +24,32 @@ public class ActivityRequest {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Size(max = 100)
+    @NotBlank
     private String title;
+
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sport_id")
     private Sport sport;
 
+    @NotNull
     private Instant eventDate;
+
+    @NotBlank
     private String addressText;
 
+    @NotNull
     private Point locationPoint;
 
+    @Size(max = 20)
+    @NotBlank
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private RequestStatus status;
 
+    @NotNull
     private UUID organizerId;
 
     @CreationTimestamp

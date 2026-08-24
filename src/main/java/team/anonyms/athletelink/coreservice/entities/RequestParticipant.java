@@ -28,12 +28,18 @@ public class RequestParticipant {
     @JoinColumn(name = "request_id")
     private ActivityRequest activityRequest;
 
+
+    @NotNull
     private UUID userId;
 
+    @Size(max = 20)
+    @NotBlank
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ParticipantRole role;
 
+    @Size(max = 20)
+    @NotBlank
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ParticipantStatus status;
