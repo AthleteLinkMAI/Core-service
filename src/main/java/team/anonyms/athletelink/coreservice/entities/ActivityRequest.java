@@ -28,8 +28,8 @@ public class ActivityRequest {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Size(max = 100)
-    @NotBlank
+    @Size(max = 100, message = "Title cannot exceed 100 characters")
+    @NotBlank(message = "Title is required")
     private String title;
 
     private String description;
@@ -38,24 +38,24 @@ public class ActivityRequest {
     @JoinColumn(name = "sport_id")
     private Sport sport;
 
-    @NotNull
+    @NotNull(message = "Event date is required")
     private Instant eventDate;
 
-    @NotBlank
+    @NotBlank(message = "Address text is required")
     private String addressText;
 
-    @NotNull
+    @NotNull(message = "Location point is required")
     private Point locationPoint;
 
-    @Size(max = 20)
-    @NotBlank
+    @NotNull(message = "Request status is required")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private RequestStatus status;
 
-    @NotNull
+    @NotNull(message = "Organizer ID is required")
     private UUID organizerId;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private Instant createdAt;
 }

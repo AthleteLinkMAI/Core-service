@@ -20,17 +20,17 @@ public class Sport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(max = 50)
-    @NotBlank
+    @Size(max = 50, message = "Sport name cannot exceed 50 characters")
+    @NotBlank(message = "Sport name is required")
     private String name;
 
-    @NotNull
+    @NotNull(message = "Minimum players count is required")
     private Integer minPlayers;
 
-    @NotNull
+    @NotNull(message = "Maximum players count is required")
     private Integer maxPlayers;
 
-    @Size(max = 255)
-    @NotBlank
+    @Size(max = 255, message = "Icon URL cannot exceed 255 characters")
+    @NotBlank(message = "Icon URL is required")
     private String iconUrl;
 }

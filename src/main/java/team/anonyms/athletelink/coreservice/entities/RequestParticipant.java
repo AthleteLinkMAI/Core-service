@@ -8,9 +8,7 @@ import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,22 +30,20 @@ public class RequestParticipant {
     @JoinColumn(name = "request_id")
     private ActivityRequest activityRequest;
 
-
-    @NotNull
+    @NotNull(message = "User ID cannot be null")
     private UUID userId;
 
-    @Size(max = 20)
-    @NotBlank
+    @NotNull(message = "Participant role is required")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ParticipantRole role;
 
-    @Size(max = 20)
-    @NotBlank
+    @NotNull(message = "Participant status is required")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ParticipantStatus status;
 
     @CreationTimestamp
+    @Column(updatable = false)
     private Instant joinedAt;
 }
