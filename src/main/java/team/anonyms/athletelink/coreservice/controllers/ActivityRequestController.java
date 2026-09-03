@@ -36,4 +36,24 @@ public class ActivityRequestController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("requestId", createdRequestId));
     }
+
+    @PostMapping("/{id}/join")
+    public ResponseEntity<Void> joinRequest(
+            @PathVariable("id") UUID requestId,
+            @RequestHeader("X-User-Id") String userId
+    ) {
+        logger.info("User {} attempting to join request {}", userId, requestId);
+        activityRequestService.joinRequest(requestId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/leave")
+    public ResponseEntity<Void> leaveRequest(
+            @PathVariable("id") UUID requestId,
+            @RequestHeader("X-User-Id") String userId
+    ) {
+        logger.info("User {} attempting to leave request {}", userId, requestId);
+        activityRequestService.leaveRequest(requestId, userId);
+        return ResponseEntity.ok().build();
+    }
 }

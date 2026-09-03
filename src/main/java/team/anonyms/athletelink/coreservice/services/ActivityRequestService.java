@@ -17,6 +17,7 @@ import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepos
 import team.anonyms.athletelink.coreservice.repositories.SportRepository;
 
 import java.util.UUID;
+import java.util.Optional;
 
 public class ActivityRequestService {
     private final ActivityRequestRepository activityRequestRepository;
@@ -68,5 +69,79 @@ public class ActivityRequestService {
         requestParticipantRepository.save(participant);
 
         return request.getId();
+    }
+
+    @Transactional
+    public void joinRequest(UUID requestId, String userIdStr) {
+        UUID userId = UUID.fromString(userIdStr);
+        
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
+
+        // Проверяем статус заявки
+        if (request.getStatus() != RequestStatus.PLANNED) {
+            throw new IllegalArgumentException("Cannot join this request. Current status is: " + request.getStatus());
+        }
+
+        Optional<RequestParticipant> existingParticipantOpt = requestParticipantRepository
+                .findByActivityRequestIdAndUserId(requestId, userId);
+
+        if (existingParticipantOpt.isPresent()) {
+            RequestParticipant existing = existingParticipantOpt.get();
+            
+            if (existing.getStatus() == ParticipantStatus.ACCEPTED) {
+                throw new IllegalArgumentException("You are already a participant");
+            }
+            if (existing.getStatus() == ParticipantStatus.KICKED) {
+                throw new IllegalArgumentException("You were kicked from this request and cannot rejoin");
+            }
+            
+            if (existing.getStatus() == ParticipantStatus.LEFT) {
+                checkCapacity(request);
+                existing.setStatus(ParticipantStatus.ACCEPTED);
+                requestParticipantRepository.save(existing);
+                return;
+            }
+        }
+
+        checkCapacity(request);
+
+        RequestParticipant newParticipant = RequestParticipant.builder()
+                .activityRequest(request)
+                .userId(userId)
+                .role(ParticipantRole.PLAYER)
+                .status(ParticipantStatus.ACCEPTED)
+                .build();
+
+        requestParticipantRepository.save(newParticipant);
+    }
+
+    @Transactional
+    public void leaveRequest(UUID requestId, String userIdStr) {
+        UUID userId = UUID.fromString(userIdStr);
+
+        RequestParticipant participant = requestParticipantRepository
+                .findByActivityRequestIdAndUserId(requestId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("You are not a participant of this request"));
+
+        if (participant.getRole() == ParticipantRole.ORGANIZER) {
+            throw new IllegalArgumentException("Organizer cannot leave the request. You must cancel the request entirely.");
+        }
+
+        if (participant.getStatus() == ParticipantStatus.LEFT) {
+            throw new IllegalArgumentException("You have already left this request");
+        }
+
+        participant.setStatus(ParticipantStatus.LEFT);
+        requestParticipantRepository.save(participant);
+    }
+
+    private void checkCapacity(ActivityRequest request) {
+        long currentPlayers = requestParticipantRepository
+                .countByActivityRequestIdAndStatus(request.getId(), ParticipantStatus.ACCEPTED);
+        
+        if (currentPlayers >= request.getSport().getMaxPlayers()) {
+            throw new IllegalArgumentException("This activity request is already full");
+        }
     }
 }
