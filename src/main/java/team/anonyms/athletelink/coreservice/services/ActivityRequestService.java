@@ -4,7 +4,6 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;

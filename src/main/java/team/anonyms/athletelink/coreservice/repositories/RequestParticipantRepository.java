@@ -2,6 +2,14 @@ package team.anonyms.athletelink.coreservice.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import team.anonyms.athletelink.coreservice.entities.RequestParticipant;
+import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
+
+import java.util.Optional;
 import java.util.UUID;
 
-public interface RequestParticipantRepository extends JpaRepository<RequestParticipant, UUID> {}
+public interface RequestParticipantRepository extends JpaRepository<RequestParticipant, UUID> {
+    
+    Optional<RequestParticipant> findByActivityRequestIdAndUserId(UUID requestId, UUID userId);
+    
+    long countByActivityRequestIdAndStatus(UUID requestId, ParticipantStatus status);
+}
