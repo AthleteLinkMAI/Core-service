@@ -48,6 +48,13 @@ public class ActivityRequestService {
         Sport sport = sportRepository.findById(dto.sportId())
                 .orElseThrow(() -> new IllegalArgumentException("Sport not found"));
 
+        if (dto.maxPlayers() < sport.getMinPlayers() || dto.maxPlayers() > sport.getMaxPlayers()) {
+            throw new IllegalArgumentException(String.format(
+                    "Players count for %s must be between %d and %d", 
+                    sport.getName(), sport.getMinPlayers(), sport.getMaxPlayers()
+            ));
+        }
+
         Coordinate coordinate = new Coordinate(dto.longitude(), dto.latitude());
         Point locationPoint = geometryFactory.createPoint(coordinate);
 
@@ -55,6 +62,7 @@ public class ActivityRequestService {
                 .title(dto.title())
                 .description(dto.description())
                 .sport(sport)
+                .maxPlayers(dto.maxPlayers())
                 .eventDate(dto.eventDate())
                 .addressText(dto.addressText())
                 .locationPoint(locationPoint)

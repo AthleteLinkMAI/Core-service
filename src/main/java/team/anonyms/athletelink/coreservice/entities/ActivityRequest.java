@@ -47,6 +47,9 @@ public class ActivityRequest {
     @NotNull(message = "Location point is required")
     private Point locationPoint;
 
+    @NotNull(message = "Max players count is required")
+    private Integer maxPlayers;
+
     @NotNull(message = "Request status is required")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

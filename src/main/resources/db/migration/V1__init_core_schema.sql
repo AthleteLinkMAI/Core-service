@@ -18,6 +18,7 @@ CREATE TABLE activity_requests (
     description TEXT,
 
     sport_id BIGINT NOT NULL REFERENCES sports(id),
+    max_players INT NOT NULL,
     event_date TIMESTAMP WITH TIME ZONE NOT NULL,
     address_text VARCHAR(255) NOT NULL,
 

@@ -17,6 +17,9 @@ public record CreateActivityRequestDto(
         @NotNull(message = "Sport ID is required")
         Long sportId,
 
+        @NotNull(message = "Max players count is required")
+        Integer maxPlayers,
+
         @NotNull(message = "Event date is required")
         @Future(message = "Event date must be in the future")
         Instant eventDate,
