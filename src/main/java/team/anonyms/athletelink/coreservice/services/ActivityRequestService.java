@@ -5,7 +5,11 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.transaction.annotation.Transactional;
+
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.dto.ParticipantDto;
+import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
+
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
 import team.anonyms.athletelink.coreservice.entities.RequestParticipant;
 import team.anonyms.athletelink.coreservice.entities.Sport;
@@ -18,6 +22,7 @@ import team.anonyms.athletelink.coreservice.repositories.SportRepository;
 
 import java.util.UUID;
 import java.util.Optional;
+import java.util.List;
 
 public class ActivityRequestService {
     private final ActivityRequestRepository activityRequestRepository;
@@ -78,7 +83,6 @@ public class ActivityRequestService {
         ActivityRequest request = activityRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
 
-        // Проверяем статус заявки
         if (request.getStatus() != RequestStatus.PLANNED) {
             throw new IllegalArgumentException("Cannot join this request. Current status is: " + request.getStatus());
         }
@@ -134,6 +138,43 @@ public class ActivityRequestService {
 
         participant.setStatus(ParticipantStatus.LEFT);
         requestParticipantRepository.save(participant);
+    }
+
+    public ActivityRequestDetailsDto getRequestDetails(UUID requestId) {
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
+
+        List<RequestParticipant> participants = requestParticipantRepository
+                .findAllByActivityRequestId(requestId);
+
+        List<ParticipantDto> participantDtos = participants.stream()
+                .map(p -> new ParticipantDto(
+                        p.getUserId(),
+                        p.getRole(),
+                        p.getStatus(),
+                        p.getJoinedAt()
+                ))
+                .toList();
+
+        int currentPlayers = (int) participants.stream()
+                .filter(p -> p.getStatus() == ParticipantStatus.ACCEPTED)
+                .count();
+
+        return new ActivityRequestDetailsDto(
+                request.getId(),
+                request.getTitle(),
+                request.getDescription(),
+                request.getSport().getName(),
+                request.getSport().getMaxPlayers(),
+                currentPlayers,
+                request.getEventDate(),
+                request.getAddressText(),
+                request.getLocationPoint().getY(),
+                request.getLocationPoint().getX(),
+                request.getStatus(),
+                request.getOrganizerId(),
+                participantDtos
+        );
     }
 
     private void checkCapacity(ActivityRequest request) {
