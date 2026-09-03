@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
@@ -55,5 +57,14 @@ public class ActivityRequestController {
         logger.info("User {} attempting to leave request {}", userId, requestId);
         activityRequestService.leaveRequest(requestId, userId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ActivityRequestDetailsDto> getRequestDetails(
+            @PathVariable("id") UUID requestId
+    ) {
+        logger.info("Fetching details for request {}", requestId);
+        ActivityRequestDetailsDto details = activityRequestService.getRequestDetails(requestId);
+        return ResponseEntity.ok(details);
     }
 }
