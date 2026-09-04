@@ -24,6 +24,10 @@ import java.util.UUID;
 import java.util.Optional;
 import java.util.List;
 
+/**
+ * Service class for managing activity requests, including creating requests, 
+ * joining/leaving requests, and retrieving request details.
+ */
 public class ActivityRequestService {
     private final ActivityRequestRepository activityRequestRepository;
     private final RequestParticipantRepository requestParticipantRepository;
@@ -41,6 +45,17 @@ public class ActivityRequestService {
         this.sportRepository = sportRepository;
     }
 
+    /**
+     * Handles the logic of creating a new activity request and automatically adding the organizer as the first participant.
+     * 
+     * Business rules:
+     * - Cannot create a request if the sport ID isn't in the list of available sports.
+     * - Cannot create a request if the player limit (maxPlayers) is not within the sport's allowed range.
+     *
+     * @param dto Data transfer object containing the details of the request to be created
+     * @param organizerIdStr ID of the organizer as a string (from the token)
+     * @throws IllegalArgumentException if the sport is not found or the player limit is invalid.
+     */
     @Transactional
     public UUID createRequest(CreateActivityRequestDto dto, String organizerIdStr) {
         UUID organizerId = UUID.fromString(organizerIdStr);
@@ -84,6 +99,20 @@ public class ActivityRequestService {
         return request.getId();
     }
 
+
+    /**
+     * Handles the logic of joining an activity request.
+     * 
+     * Business rules:
+     * - Cannot join if the request status is not PLANNED.
+     * - Cannot join if the player limit (maxPlayers) has been reached.
+     * - If the user previously left (LEFT), they can rejoin if there are available spots.
+     * - If the user was kicked by the organizer (KICKED), rejoining is forbidden.
+     *
+     * @param requestId ID of the target request
+     * @param userIdStr ID of the user as a string (from the token)
+     * @throws IllegalArgumentException if the request is not found, no spots available, or the user is blocked in this request
+     */
     @Transactional
     public void joinRequest(UUID requestId, String userIdStr) {
         UUID userId = UUID.fromString(userIdStr);
@@ -128,6 +157,18 @@ public class ActivityRequestService {
         requestParticipantRepository.save(newParticipant);
     }
 
+    /**
+     * Handles the logic of leaving an activity request.
+     * 
+     * Business rules:
+     * - Cannot kick the organizer from the request. The organizer must cancel the request entirely.
+     * - Cannot kick the user who is not a participant of the request.
+     * - Cannot kick the user who has already left the request.
+     *
+     * @param requestId ID of the target request
+     * @param userIdStr ID of the user as a string (from the token)
+     * @throws IllegalArgumentException if the request is not found, the user is not a participant, or the user is the organizer.
+     */
     @Transactional
     public void leaveRequest(UUID requestId, String userIdStr) {
         UUID userId = UUID.fromString(userIdStr);
@@ -148,6 +189,12 @@ public class ActivityRequestService {
         requestParticipantRepository.save(participant);
     }
 
+    /**
+     * Gets the details of a specific activity request, including its participants and their statuses.
+     *
+     * @param requestId ID of the target request
+     * @throws IllegalArgumentException if the request is not found.
+     */
     public ActivityRequestDetailsDto getRequestDetails(UUID requestId) {
         ActivityRequest request = activityRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
@@ -185,6 +232,12 @@ public class ActivityRequestService {
         );
     }
 
+    /**
+     * Checks if the activity request has available spots for new participants.
+     *
+     * @param request The activity request to check
+     * @throws IllegalArgumentException if the request doesn't have available spots (i.e., it is full).
+     */
     private void checkCapacity(ActivityRequest request) {
         long currentPlayers = requestParticipantRepository
                 .countByActivityRequestIdAndStatus(request.getId(), ParticipantStatus.ACCEPTED);
