@@ -32,6 +32,7 @@ public class ActivityRequest {
     @NotBlank(message = "Title is required")
     private String title;
 
+    @Size(max = 1024, message = "Description cannot exceed 1024 characters.")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -46,6 +47,9 @@ public class ActivityRequest {
 
     @NotNull(message = "Location point is required")
     private Point locationPoint;
+
+    @NotNull(message = "Number of rounds is required")
+    private Integer numberOfRounds;
 
     @NotNull(message = "Max players count is required")
     private Integer maxPlayers;

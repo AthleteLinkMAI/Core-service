@@ -26,6 +26,9 @@ public record ActivityRequestFeedDto(
         
         @Schema(description = "Textual address for display in the card", example = "Москва, ул. Константина Царева, 12к1")
         String addressText,
+
+        @Schema(description = "Planned number of rounds/sets", example = "3")
+        Integer numberOfRounds,
         
         @Schema(description = "Latitude (for map marker)", example = "55.715551")
         Double latitude,

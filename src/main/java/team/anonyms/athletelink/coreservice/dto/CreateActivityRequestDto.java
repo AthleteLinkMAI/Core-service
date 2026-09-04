@@ -1,6 +1,8 @@
 package team.anonyms.athletelink.coreservice.dto;
 
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -32,6 +34,12 @@ public record CreateActivityRequestDto(
         @NotNull(message = "Event date is required")
         @Future(message = "Event date must be in the future")
         Instant eventDate,
+
+        @Schema(description = "Number of rounds/sets (e.g. 1 for a regular game, 3 for the \"Best of 3\" format)", example = "3")
+        @NotNull(message = "Number of rounds is required")
+        @Min(value = 1, message = "There must be at least 1 round")
+        @Max(value = 10, message = "Maximum 10 rounds allowed")
+        Integer numberOfRounds,
 
         @Schema(description = "Address of the activity", example = "г. Москва, ул. Константина Царева, 12к1")
         @NotBlank(message = "Address is required")

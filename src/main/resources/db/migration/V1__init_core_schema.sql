@@ -22,6 +22,8 @@ CREATE TABLE activity_requests (
     event_date TIMESTAMP WITH TIME ZONE NOT NULL,
     address_text VARCHAR(255) NOT NULL,
 
+    number_of_rounds INT NOT NULL DEFAULT 1,
+
     location_point geometry(Point, 4326) NOT NULL,
     status request_status NOT NULL DEFAULT 'PLANNED',
 

@@ -80,6 +80,7 @@ public class ActivityRequestService {
                 .maxPlayers(dto.maxPlayers())
                 .eventDate(dto.eventDate())
                 .addressText(dto.addressText())
+                .numberOfRounds(dto.numberOfRounds())
                 .locationPoint(locationPoint)
                 .status(RequestStatus.PLANNED)
                 .organizerId(organizerId)
@@ -288,6 +289,7 @@ public class ActivityRequestService {
                 currentPlayers,
                 request.getEventDate(),
                 request.getAddressText(),
+                request.getNumberOfRounds(),
                 request.getLocationPoint().getY(),
                 request.getLocationPoint().getX(),
                 request.getStatus(),
@@ -321,6 +323,7 @@ public class ActivityRequestService {
                     currentPlayers,
                     request.getEventDate(),
                     request.getAddressText(),
+                    request.getNumberOfRounds(),
                     request.getLocationPoint().getY(),
                     request.getLocationPoint().getX()
             );
