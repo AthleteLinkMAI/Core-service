@@ -4,6 +4,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
@@ -17,6 +18,7 @@ import team.anonyms.athletelink.coreservice.entities.Sport;
 import team.anonyms.athletelink.coreservice.enums.ParticipantRole;
 import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import team.anonyms.athletelink.coreservice.enums.RequestStatus;
+import team.anonyms.athletelink.coreservice.mappers.ActivityRequestMapper;
 import team.anonyms.athletelink.coreservice.repositories.ActivityRequestRepository;
 import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepository;
 import team.anonyms.athletelink.coreservice.repositories.SportRepository;
@@ -29,21 +31,26 @@ import java.util.List;
  * Service class for managing activity requests, including creating requests, 
  * joining/leaving requests, and retrieving request details.
  */
+@Service 
 public class ActivityRequestService {
     private final ActivityRequestRepository activityRequestRepository;
     private final RequestParticipantRepository requestParticipantRepository;
     private final SportRepository sportRepository;
+
+    private final ActivityRequestMapper requestMapper;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     public ActivityRequestService(
         ActivityRequestRepository activityRequestRepository, 
         RequestParticipantRepository requestParticipantRepository, 
-        SportRepository sportRepository
+        SportRepository sportRepository,
+        ActivityRequestMapper requestMapper
     ) {
         this.activityRequestRepository = activityRequestRepository;
         this.requestParticipantRepository = requestParticipantRepository;
         this.sportRepository = sportRepository;
+        this.requestMapper = requestMapper;
     }
 
     /**
@@ -280,22 +287,7 @@ public class ActivityRequestService {
                 .filter(p -> p.getStatus() == ParticipantStatus.ACCEPTED)
                 .count();
 
-        return new ActivityRequestDetailsDto(
-                request.getId(),
-                request.getTitle(),
-                request.getDescription(),
-                request.getSport().getName(),
-                request.getSport().getMaxPlayers(),
-                currentPlayers,
-                request.getEventDate(),
-                request.getAddressText(),
-                request.getNumberOfRounds(),
-                request.getLocationPoint().getY(),
-                request.getLocationPoint().getX(),
-                request.getStatus(),
-                request.getOrganizerId(),
-                participantDtos
-        );
+        return requestMapper.toDetailsDto(request, currentPlayers, participantDtos);
     }
 
     /**
@@ -315,18 +307,8 @@ public class ActivityRequestService {
             int currentPlayers = (int) requestParticipantRepository
                     .countByActivityRequestIdAndStatus(request.getId(), ParticipantStatus.ACCEPTED);
             
-            return new ActivityRequestFeedDto(
-                    request.getId(),
-                    request.getTitle(),
-                    request.getSport().getName(),
-                    request.getMaxPlayers(),
-                    currentPlayers,
-                    request.getEventDate(),
-                    request.getAddressText(),
-                    request.getNumberOfRounds(),
-                    request.getLocationPoint().getY(),
-                    request.getLocationPoint().getX()
-            );
+            return requestMapper.toFeedDto(request, currentPlayers);
+            
         }).toList();
     }
 
