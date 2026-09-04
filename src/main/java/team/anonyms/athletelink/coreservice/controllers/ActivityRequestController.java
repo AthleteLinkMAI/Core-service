@@ -47,7 +47,7 @@ public class ActivityRequestController {
     public ResponseEntity<Map<String, UUID>> createRequest(
             @RequestBody @Valid CreateActivityRequestDto dto,
             @Parameter(description = "User ID from API Gateway", hidden = true)
-            @RequestHeader("X-User-Id") String userId
+            @RequestHeader("X-User-Id") UUID userId
     ) {
         logger.info("User {} is creating a new activity request: {}", userId, dto.title());
 
@@ -70,7 +70,7 @@ public class ActivityRequestController {
     public ResponseEntity<Void> joinRequest(
             @Parameter(description = "Request UUID", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable("id") UUID requestId,
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") String userId
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId
     ) {
         logger.info("User {} attempting to join request {}", userId, requestId);
         activityRequestService.joinRequest(requestId, userId);
@@ -90,7 +90,7 @@ public class ActivityRequestController {
     public ResponseEntity<Void> leaveRequest(
             @Parameter(description = "Request UUID", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable("id") UUID requestId,
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") String userId
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId
     ) {
         logger.info("User {} attempting to leave request {}", userId, requestId);
         activityRequestService.leaveRequest(requestId, userId);
@@ -108,7 +108,7 @@ public class ActivityRequestController {
     })
     public ResponseEntity<Void> cancelRequest(
             @Parameter(description = "UUID of the request") @PathVariable("id") UUID requestId,
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") String userId
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId
     ) {
         logger.info("User {} is attempting to cancel request {}", userId, requestId);
         activityRequestService.cancelRequest(requestId, userId);
@@ -126,8 +126,8 @@ public class ActivityRequestController {
     })
     public ResponseEntity<Void> kickParticipant(
             @Parameter(description = "UUID of the request") @PathVariable("id") UUID requestId,
-            @Parameter(description = "UUID of the user to kick") @PathVariable("targetUserId") String targetUserId,
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") String organizerId
+            @Parameter(description = "UUID of the user to kick") @PathVariable("targetUserId") UUID targetUserId,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID organizerId
     ) {
         logger.info("Organizer {} is attempting to kick user {} from request {}", organizerId, targetUserId, requestId);
         activityRequestService.kickParticipant(requestId, targetUserId, organizerId);

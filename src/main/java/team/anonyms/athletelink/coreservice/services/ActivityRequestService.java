@@ -58,8 +58,7 @@ public class ActivityRequestService {
      * @throws IllegalArgumentException if the sport is not found or the player limit is invalid.
      */
     @Transactional
-    public UUID createRequest(CreateActivityRequestDto dto, String organizerIdStr) {
-        UUID organizerId = UUID.fromString(organizerIdStr);
+    public UUID createRequest(CreateActivityRequestDto dto, UUID organizerId) {
 
         Sport sport = sportRepository.findById(dto.sportId())
                 .orElseThrow(() -> new IllegalArgumentException("Sport not found"));
@@ -115,8 +114,7 @@ public class ActivityRequestService {
      * @throws IllegalArgumentException if the request is not found, no spots available, or the user is blocked in this request
      */
     @Transactional
-    public void joinRequest(UUID requestId, String userIdStr) {
-        UUID userId = UUID.fromString(userIdStr);
+    public void joinRequest(UUID requestId, UUID userId) {
         
         ActivityRequest request = activityRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
@@ -171,8 +169,7 @@ public class ActivityRequestService {
      * @throws IllegalArgumentException if the request is not found, the user is not a participant, or the user is the organizer.
      */
     @Transactional
-    public void leaveRequest(UUID requestId, String userIdStr) {
-        UUID userId = UUID.fromString(userIdStr);
+    public void leaveRequest(UUID requestId, UUID userId) {
 
         RequestParticipant participant = requestParticipantRepository
                 .findByActivityRequestIdAndUserId(requestId, userId)
@@ -201,8 +198,7 @@ public class ActivityRequestService {
      * @param userIdStr ID of the user attempting the cancellation
      */
     @Transactional
-    public void cancelRequest(UUID requestId, String userIdStr) {
-        UUID userId = UUID.fromString(userIdStr);
+    public void cancelRequest(UUID requestId, UUID userId) {
 
         ActivityRequest request = activityRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
@@ -232,9 +228,7 @@ public class ActivityRequestService {
      * @param organizerIdStr ID of the user attempting the kick (must be organizer)
      */
     @Transactional
-    public void kickParticipant(UUID requestId, String targetUserIdStr, String organizerIdStr) {
-        UUID organizerId = UUID.fromString(organizerIdStr);
-        UUID targetUserId = UUID.fromString(targetUserIdStr);
+    public void kickParticipant(UUID requestId, UUID targetUserId, UUID organizerId) {
 
         ActivityRequest request = activityRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
