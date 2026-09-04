@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.dto.ParticipantDto;
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
+import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
 
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
 import team.anonyms.athletelink.coreservice.entities.RequestParticipant;
@@ -190,6 +191,75 @@ public class ActivityRequestService {
     }
 
     /**
+     * Cancels the activity request.
+     * 
+     * Business rules:
+     * - Only the creator (organizer) of the request can cancel it.
+     * - Cannot cancel a request that is already COMPLETED or CANCELLED.
+     *
+     * @param requestId ID of the request to cancel
+     * @param userIdStr ID of the user attempting the cancellation
+     */
+    @Transactional
+    public void cancelRequest(UUID requestId, String userIdStr) {
+        UUID userId = UUID.fromString(userIdStr);
+
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
+
+        if (!request.getOrganizerId().equals(userId)) {
+            throw new IllegalArgumentException("Only the organizer can cancel this request");
+        }
+
+        if (request.getStatus() == RequestStatus.COMPLETED || request.getStatus() == RequestStatus.CANCELLED) {
+            throw new IllegalArgumentException("Cannot cancel a request with status: " + request.getStatus());
+        }
+
+        request.setStatus(RequestStatus.CANCELLED);
+        activityRequestRepository.save(request);
+    }
+
+    /**
+     * Kicks a participant from the activity request.
+     * 
+     * Business rules:
+     * - Only the creator (organizer) can kick participants.
+     * - The organizer cannot kick themselves.
+     * - The target user must be an existing participant of this request.
+     *
+     * @param requestId ID of the request
+     * @param targetUserIdStr ID of the user to be kicked
+     * @param organizerIdStr ID of the user attempting the kick (must be organizer)
+     */
+    @Transactional
+    public void kickParticipant(UUID requestId, String targetUserIdStr, String organizerIdStr) {
+        UUID organizerId = UUID.fromString(organizerIdStr);
+        UUID targetUserId = UUID.fromString(targetUserIdStr);
+
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
+
+        if (!request.getOrganizerId().equals(organizerId)) {
+            throw new IllegalArgumentException("Only the organizer can kick participants");
+        }
+
+        if (organizerId.equals(targetUserId)) {
+            throw new IllegalArgumentException("Organizer cannot kick themselves");
+        }
+
+        RequestParticipant targetParticipant = requestParticipantRepository
+                .findByActivityRequestIdAndUserId(requestId, targetUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Target user is not a participant of this request"));
+
+        if (targetParticipant.getStatus() == ParticipantStatus.KICKED) {
+            throw new IllegalArgumentException("User is already kicked");
+        }
+
+        targetParticipant.setStatus(ParticipantStatus.KICKED);
+        requestParticipantRepository.save(targetParticipant);
+    }
+
+    /**
      * Gets the details of a specific activity request, including its participants and their statuses.
      *
      * @param requestId ID of the target request
@@ -230,6 +300,37 @@ public class ActivityRequestService {
                 request.getOrganizerId(),
                 participantDtos
         );
+    }
+
+    /**
+     * Searches for nearby activity requests based on the provided latitude, longitude, radius, and optional sport ID.
+     * The search filters requests that are planned, have an event date in the future, and
+     * are within the specified radius from the given coordinates.
+     * If a sport ID is provided, it filters requests for that specific sport.
+     */
+    @Transactional(readOnly = true)
+    public List<ActivityRequestFeedDto> searchNearbyRequests(
+            double latitude, double longitude, double radiusInMeters, Long sportId) {
+        List<ActivityRequest> nearbyRequests = activityRequestRepository
+                .findNearbyRequests(latitude, longitude, radiusInMeters, sportId);
+
+        return nearbyRequests.stream().map(request -> {
+            
+            int currentPlayers = (int) requestParticipantRepository
+                    .countByActivityRequestIdAndStatus(request.getId(), ParticipantStatus.ACCEPTED);
+            
+            return new ActivityRequestFeedDto(
+                    request.getId(),
+                    request.getTitle(),
+                    request.getSport().getName(),
+                    request.getMaxPlayers(),
+                    currentPlayers,
+                    request.getEventDate(),
+                    request.getAddressText(),
+                    request.getLocationPoint().getY(),
+                    request.getLocationPoint().getX()
+            );
+        }).toList();
     }
 
     /**

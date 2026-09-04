@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
+import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/requests")
@@ -34,7 +36,10 @@ public class ActivityRequestController {
     }
 
     @PostMapping
-    @Operation(summary = "Create new request", description = "Creates a room for the game. The organizer automatically becomes the first participant.")
+    @Operation(
+        summary = "Create new request",
+        description = "Creates a room for the game. The organizer automatically becomes the first participant."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Request created successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error (e.g., invalid player limit or empty title)")
@@ -53,7 +58,10 @@ public class ActivityRequestController {
     }
 
     @PostMapping("/{id}/join")
-    @Operation(summary = "Join request", description = "Adds user to the list of participants if there are available spots.")
+    @Operation(
+        summary = "Join request",
+        description = "Adds user to the list of participants if there are available spots."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully joined"),
             @ApiResponse(responseCode = "400", description = "Request is full, has already started, or user was previously kicked"),
@@ -70,7 +78,10 @@ public class ActivityRequestController {
     }
 
     @PostMapping("/{id}/leave")
-    @Operation(summary = "Leave request", description = "Removes user from the request, freeing the spot.")
+    @Operation(
+        summary = "Leave request", 
+        description = "Removes user from the request, freeing the spot."
+)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Player successfully left the request"),
             @ApiResponse(responseCode = "400", description = "User is not a participant of the request or is the organizer"),
@@ -84,6 +95,69 @@ public class ActivityRequestController {
         logger.info("User {} attempting to leave request {}", userId, requestId);
         activityRequestService.leaveRequest(requestId, userId);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(
+            summary = "Cancel activity request",
+            description = "Cancels the entire activity request. Can only be performed by the request organizer."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Request successfully cancelled"),
+            @ApiResponse(responseCode = "400", description = "User is not the organizer, or request is already completed/cancelled")
+    })
+    public ResponseEntity<Void> cancelRequest(
+            @Parameter(description = "UUID of the request") @PathVariable("id") UUID requestId,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") String userId
+    ) {
+        logger.info("User {} is attempting to cancel request {}", userId, requestId);
+        activityRequestService.cancelRequest(requestId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/kick/{targetUserId}")
+    @Operation(
+            summary = "Kick a participant",
+            description = "Kicks a user from the request room. The kicked user will not be able to rejoin. Can only be performed by the organizer."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User successfully kicked"),
+            @ApiResponse(responseCode = "400", description = "Target user is not a participant, or initiator is not the organizer")
+    })
+    public ResponseEntity<Void> kickParticipant(
+            @Parameter(description = "UUID of the request") @PathVariable("id") UUID requestId,
+            @Parameter(description = "UUID of the user to kick") @PathVariable("targetUserId") String targetUserId,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") String organizerId
+    ) {
+        logger.info("Organizer {} is attempting to kick user {} from request {}", organizerId, targetUserId, requestId);
+        activityRequestService.kickParticipant(requestId, targetUserId, organizerId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping
+    @Operation(
+            summary = "Geo-search for requests",
+            description = "Looks for requests within a specified radius from the given latitude and longitude. Optionally, filter by sport type."
+    )
+    public ResponseEntity<List<ActivityRequestFeedDto>> searchNearbyRequests(
+            @Parameter(description = "Latitude", example = "55.7558") 
+            @RequestParam("lat") Double lat,
+            
+            @Parameter(description = "Longitude", example = "37.6173") 
+            @RequestParam("lon") Double lon,
+            
+            @Parameter(description = "Radius of search in meters", example = "5000") 
+            @RequestParam(value = "radius", defaultValue = "5000") Double radius,
+            
+            @Parameter(description = "Filter by sport type (optional)", example = "1") 
+            @RequestParam(value = "sportId", required = false) Long sportId
+    ) {
+        logger.info("Searching for requests near [{}, {}] within {} meters. Sport filter: {}", lat, lon, radius, sportId);
+        
+        List<ActivityRequestFeedDto> feed = activityRequestService
+                .searchNearbyRequests(lat, lon, radius, sportId);
+                
+        return ResponseEntity.ok(feed);
     }
 
     @GetMapping("/{id}")
