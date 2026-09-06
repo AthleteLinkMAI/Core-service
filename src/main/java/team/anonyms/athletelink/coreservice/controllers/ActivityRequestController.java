@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.dto.UpdateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -132,6 +133,27 @@ public class ActivityRequestController {
         logger.info("Organizer {} is attempting to kick user {} from request {}", organizerId, targetUserId, requestId);
         activityRequestService.kickParticipant(requestId, targetUserId, organizerId);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    @Operation(
+            summary = "Edit activity request",
+            description = "Updates text fields, date, and limits of the request. Only available to the organizer while the request is PLANNED."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully updated"),
+            @ApiResponse(responseCode = "400", description = "Validation error, not the organizer, or new limit is too low")
+    })
+    public ResponseEntity<ActivityRequestDetailsDto> updateRequest(
+            @Parameter(description = "UUID of the request") @PathVariable("id") UUID requestId,
+            @Valid @RequestBody UpdateActivityRequestDto dto,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") UUID userId
+    ) {
+        logger.info("Organizer {} is updating request {}", userId, requestId);
+        
+        ActivityRequestDetailsDto updatedRequest = activityRequestService.updateRequest(requestId, userId, dto);
+        
+        return ResponseEntity.ok(updatedRequest);
     }
 
     @GetMapping

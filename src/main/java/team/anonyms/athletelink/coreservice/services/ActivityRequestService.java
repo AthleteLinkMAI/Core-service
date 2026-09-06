@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.dto.ParticipantDto;
+import team.anonyms.athletelink.coreservice.dto.UpdateActivityRequestDto;
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
 import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
 
@@ -259,6 +260,52 @@ public class ActivityRequestService {
 
         targetParticipant.setStatus(ParticipantStatus.KICKED);
         requestParticipantRepository.save(targetParticipant);
+    }
+
+    /**
+     * Updates an existing activity request.
+     * 
+     * Business rules:
+     * - Only the organizer can edit the request.
+     * - Cannot edit if the request is not in PLANNED status.
+     * - New maxPlayers limit cannot be less than the current number of accepted participants.
+     */
+    @Transactional
+    public ActivityRequestDetailsDto updateRequest(UUID requestId, UUID organizerId, UpdateActivityRequestDto dto) {
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Activity request not found"));
+
+        if (!request.getOrganizerId().equals(organizerId)) {
+            throw new IllegalArgumentException("Only the organizer can edit this request");
+        }
+
+        if (request.getStatus() != RequestStatus.PLANNED) {
+            throw new IllegalArgumentException("Can only edit requests in PLANNED status");
+        }
+
+        List<RequestParticipant> participants = requestParticipantRepository.findAllByActivityRequestId(requestId);
+        
+        int currentPlayers = (int) participants.stream()
+                .filter(p -> p.getStatus() == ParticipantStatus.ACCEPTED)
+                .count();
+
+        if (dto.maxPlayers() < currentPlayers) {
+            throw new IllegalArgumentException("Cannot set maxPlayers below the current number of joined players (" + currentPlayers + ")");
+        }
+
+        request.setTitle(dto.title());
+        request.setDescription(dto.description());
+        request.setEventDate(dto.eventDate());
+        request.setNumberOfRounds(dto.numberOfRounds());
+        request.setMaxPlayers(dto.maxPlayers());
+
+        activityRequestRepository.save(request);
+
+        List<ParticipantDto> participantDtos = participants.stream()
+                .map(p -> new ParticipantDto(p.getUserId(), p.getRole(), p.getStatus(), p.getJoinedAt()))
+                .toList();
+
+        return requestMapper.toDetailsDto(request, currentPlayers, participantDtos);
     }
 
     /**
