@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -172,12 +173,20 @@ public class ActivityRequestController {
             @RequestParam(value = "radius", defaultValue = "5000") Double radius,
             
             @Parameter(description = "Filter by sport type (optional)", example = "1") 
-            @RequestParam(value = "sportId", required = false) Long sportId
+            @RequestParam(value = "sportId", required = false) Long sportId,
+
+            @Parameter(description = "Begin of time window (ISO-8601)", example = "2026-09-10T10:00:00Z") 
+            @RequestParam(value = "startDate", required = false) Instant startDate,
+            
+            @Parameter(description = "End of time window (ISO-8601)", example = "2026-09-12T22:00:00Z") 
+            @RequestParam(value = "endDate", required = false) Instant endDate
     ) {
-        logger.info("Searching for requests near [{}, {}] within {} meters. Sport filter: {}", lat, lon, radius, sportId);
+        logger.info("Searching for requests near [{}, {}] within {} meters. Sport filter: {}. Date range: {} to {}", lat, lon, radius, sportId,
+                startDate, endDate
+        );
         
         List<ActivityRequestFeedDto> feed = activityRequestService
-                .searchNearbyRequests(lat, lon, radius, sportId);
+                .searchNearbyRequests(lat, lon, radius, sportId, startDate, endDate);
                 
         return ResponseEntity.ok(feed);
     }

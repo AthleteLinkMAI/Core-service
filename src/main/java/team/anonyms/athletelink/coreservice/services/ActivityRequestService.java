@@ -27,6 +27,7 @@ import team.anonyms.athletelink.coreservice.repositories.SportRepository;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.List;
+import java.time.Instant;
 
 /**
  * Service class for managing activity requests, including creating requests, 
@@ -345,9 +346,10 @@ public class ActivityRequestService {
      */
     @Transactional(readOnly = true)
     public List<ActivityRequestFeedDto> searchNearbyRequests(
-            double latitude, double longitude, double radiusInMeters, Long sportId) {
+            double latitude, double longitude, double radiusInMeters, Long sportId,
+        Instant startDate, Instant endDate) {
         List<ActivityRequest> nearbyRequests = activityRequestRepository
-                .findNearbyRequests(latitude, longitude, radiusInMeters, sportId);
+                .findNearbyRequests(latitude, longitude, radiusInMeters, sportId, startDate, endDate);
 
         return nearbyRequests.stream().map(request -> {
             

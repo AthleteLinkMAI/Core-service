@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,6 +31,8 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
             WHERE status = 'PLANNED' 
               AND event_date > CURRENT_TIMESTAMP 
               AND (CAST(:sportId AS BIGINT) IS NULL OR sport_id = CAST(:sportId AS BIGINT)) 
+              AND (CAST(:startDate AS timestamp) IS NULL OR event_date >= CAST(:startDate AS timestamp))
+              AND (CAST(:endDate AS timestamp) IS NULL OR event_date <= CAST(:endDate AS timestamp))
               AND ST_DWithin(
                   location_point::geography, 
                   ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 
@@ -41,9 +44,11 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
             ) ASC
             """, nativeQuery = true)
     List<ActivityRequest> findNearbyRequests(
-        @Param("latitude") double latitude,
-        @Param("longitude") double longitude,
+        @Param("lat") double lat,
+        @Param("lon") double lon,
         @Param("radius") double radiusInMeters,
-        @Param("sportId") Long sportId
+        @Param("sportId") Long sportId,
+        @Param("startDate") Instant startDate,
+        @Param("endDate") Instant endDate
     );
 }
