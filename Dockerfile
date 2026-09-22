@@ -1,5 +1,5 @@
 FROM maven:3.9.13-eclipse-temurin-25 AS build
-LABEL authors="ASKekishev"
+LABEL authors="Team anonyms"
 WORKDIR /app
 COPY . .
 
