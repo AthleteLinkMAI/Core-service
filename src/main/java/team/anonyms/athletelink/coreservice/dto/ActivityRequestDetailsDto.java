@@ -13,10 +13,10 @@ public record ActivityRequestDetailsDto(
         @Schema(description = "Unique request ID", example = "123e4567-e89b-12d3-a456-426614174000")
         UUID id,
 
-        @Schema(description = "Request title", example = "MAI litrbol in GUK")
+        @Schema(description = "Request title", example = "Friendly football match")
         String title,
         
-        @Schema(description = "Description", example = "30 people for litrbol, bring beer and snacks")
+        @Schema(description = "Description", example = "Outdoor match, bring your own boots")
         String description,
         
         @Schema(description = "Sport name", example = "Football")
@@ -28,7 +28,7 @@ public record ActivityRequestDetailsDto(
         @Schema(description = "Current number of accepted players", example = "4")
         Integer currentPlayers,
         
-        @Schema(description = "Event start date and time", example = "2026-09-04T18:00:00Z")
+        @Schema(description = "Event start date and time", example = "2030-06-15T18:00:00Z")
         Instant eventDate,
         
         @Schema(description = "Textual address for display in the card", example = "Москва, ул. Константина Царева, 12к1")
@@ -43,10 +43,13 @@ public record ActivityRequestDetailsDto(
         @Schema(description = "Longitude (for map marker)", example = "37.554191")
         Double longitude,
         
-        @Schema(description = "Current status of the request")
+        @Schema(description = "Current lifecycle status of the request", example = "PLANNED")
         RequestStatus status,
+
+        @Schema(description = "Whether new players can join the request", example = "false")
+        Boolean registrationOpen,
         
-        @Schema(description = "ID of request creator (organizer)")
+        @Schema(description = "UUID of the request organizer", example = "123e4567-e89b-12d3-a456-426614174002")
         UUID organizerId,
         
         @Schema(description = "List of all participants in the room")

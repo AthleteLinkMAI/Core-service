@@ -29,7 +29,8 @@ CREATE TABLE activity_requests (
 
     organizer_id UUID NOT NULL,
 
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    registration_open BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE INDEX idx_activity_requests_location ON activity_requests USING GIST (location_point);
@@ -47,6 +48,37 @@ CREATE TABLE request_participants (
 
     UNIQUE (request_id, user_id)
 );
+
+CREATE TABLE activity_round_results (
+    id UUID PRIMARY KEY,
+    request_id UUID NOT NULL
+        REFERENCES activity_requests(id)
+            ON DELETE CASCADE,
+    round_number INT NOT NULL CHECK (round_number > 0),
+    recorded_by UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE
+        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (request_id, round_number)
+);
+
+CREATE TABLE activity_round_player_results (
+    id UUID PRIMARY KEY,
+    round_result_id UUID NOT NULL
+        REFERENCES activity_round_results(id)
+            ON DELETE CASCADE,
+    player_id UUID NOT NULL,
+    outcome VARCHAR(8) NOT NULL
+        CHECK (outcome IN ('WIN', 'LOSS')),
+
+    UNIQUE (round_result_id, player_id)
+);
+
+CREATE INDEX idx_round_results_request
+    ON activity_round_results(request_id);
+
+CREATE INDEX idx_round_player_results_player
+    ON activity_round_player_results(player_id);
 
 
 INSERT INTO sports (name, min_players, max_players) VALUES

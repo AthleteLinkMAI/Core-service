@@ -1,10 +1,13 @@
 package team.anonyms.athletelink.coreservice.repositories;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
 
+import java.util.Optional;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,11 +31,12 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
      */
     @Query(value = """
             SELECT * FROM activity_requests 
-            WHERE status = 'PLANNED' 
+            WHERE status = 'PLANNED'
+              AND registration_open = TRUE
               AND event_date > CURRENT_TIMESTAMP 
               AND (CAST(:sportId AS BIGINT) IS NULL OR sport_id = CAST(:sportId AS BIGINT)) 
-              AND (CAST(:startDate AS timestamp) IS NULL OR event_date >= CAST(:startDate AS timestamp))
-              AND (CAST(:endDate AS timestamp) IS NULL OR event_date <= CAST(:endDate AS timestamp))
+              AND (CAST(:startDate AS timestamptz) IS NULL OR event_date >= CAST(:startDate AS timestamptz))
+              AND (CAST(:endDate AS timestamptz) IS NULL OR event_date <= CAST(:endDate AS timestamptz))
               AND ST_DWithin(
                   location_point::geography, 
                   ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 
@@ -51,4 +55,12 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
         @Param("startDate") Instant startDate,
         @Param("endDate") Instant endDate
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT ar
+        FROM ActivityRequest ar
+        WHERE ar.id = :id
+        """)
+    Optional<ActivityRequest> findByIdForUpdate(@Param("id") UUID requestId);
 }
