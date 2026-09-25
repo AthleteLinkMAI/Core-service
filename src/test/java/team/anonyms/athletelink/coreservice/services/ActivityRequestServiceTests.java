@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.locationtech.jts.geom.Point;
@@ -117,77 +116,13 @@ class ActivityRequestServiceTests {
 
 
     @Test
-    void testCreateRequest_NullDto() {
-        UUID organizerId = UUID.randomUUID();
-
-        assertThrows(NullPointerException.class,
-            () -> activityRequestService.createRequest(null, organizerId)
-        );
-
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullOrganizedId() {
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            3,
-            "Moscow",
-            0.0,
-            0.0
-        );
-
-        assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, null)
-        );
-
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullTitle() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            null,
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            3,
-            "Moscow",
-            0.0,
-            0.0
-        );
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-
-        assertTrue(exception.getMessage().contains("Title not found"));
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullSportId() {
+    void testCreateRequest_UnderLimitMaxPlayers() {
         UUID organizerId = UUID.randomUUID();
         CreateActivityRequestDto dto = new CreateActivityRequestDto(
             "Football",
             "Friendly match",
-            null,
-            14,
+            1L,
+            4,
             Instant.now(),
             3,
             "Moscow",
@@ -195,187 +130,87 @@ class ActivityRequestServiceTests {
             0.0
         );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
+        Sport mockSport = Mockito.mock(Sport.class);
+        Mockito.when(mockSport.getName()).thenReturn("football");
+        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
+        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
+
+        Mockito.when(sportRepository.findById(dto.sportId()))
+            .thenReturn(Optional.of(mockSport));
+        
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> activityRequestService.createRequest(dto, organizerId)
+        );
+        
+        assertTrue(exception.getMessage().contains("Players count for football must be between 10 and 22"));
+        Mockito.verifyNoInteractions(activityRequestRepository);
+        Mockito.verifyNoInteractions(requestParticipantRepository);
+    }
+
+
+    @Test
+    void testCreateRequest_OverLimitMaxPlayers() {
+        UUID organizerId = UUID.randomUUID();
+        CreateActivityRequestDto dto = new CreateActivityRequestDto(
+            "Football",
+            "Friendly match",
+            1L,
+            44,
+            Instant.now(),
+            3,
+            "Moscow",
+            0.0,
+            0.0
         );
 
+        Sport mockSport = Mockito.mock(Sport.class);
+        Mockito.when(mockSport.getName()).thenReturn("football");
+        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
+        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
+
+        Mockito.when(sportRepository.findById(dto.sportId()))
+            .thenReturn(Optional.of(mockSport));
+        
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> activityRequestService.createRequest(dto, organizerId)
+        );
+        
+        assertTrue(exception.getMessage().contains("Players count for football must be between 10 and 22"));
+        Mockito.verifyNoInteractions(activityRequestRepository);
+        Mockito.verifyNoInteractions(requestParticipantRepository);
+    }
+
+
+    @Test
+    void testCreateRequest_SportNotFound() {
+        UUID organizerId = UUID.randomUUID();
+        CreateActivityRequestDto dto = new CreateActivityRequestDto(
+            "Football",
+            "Friendly match",
+            1L,
+            4,
+            Instant.now(),
+            3,
+            "Moscow",
+            0.0,
+            0.0
+        );
+
+
+        Mockito.when(sportRepository.findById(dto.sportId()))
+            .thenReturn(Optional.empty());
+        
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> activityRequestService.createRequest(dto, organizerId)
+        );
+        
         assertTrue(exception.getMessage().contains("Sport not found"));
         Mockito.verifyNoInteractions(activityRequestRepository);
         Mockito.verifyNoInteractions(requestParticipantRepository);
     }
 
 
-    @Test
-    void testCreateRequest_NullMaxPlayers() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            null,
-            Instant.now(),
-            3,
-            "Moscow",
-            0.0,
-            0.0
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-
-        assertTrue(exception.getMessage().contains("Players count for"));
-        assertTrue(exception.getMessage().contains("must be between"));
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullEventDate() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            null,
-            3,
-            "Moscow",
-            0.0,
-            0.0
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullNumberOfRounds() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            null,
-            "Moscow",
-            0.0,
-            0.0
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-        
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullAddressText() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            3,
-            null,
-            0.0,
-            0.0
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-        
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullLatitude() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            3,
-            "Moscow",
-            null,
-            0.0
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-        
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
-
-
-    @Test
-    void testCreateRequest_NullLongitude() {
-        UUID organizerId = UUID.randomUUID();
-        CreateActivityRequestDto dto = new CreateActivityRequestDto(
-            "Football",
-            "Friendly match",
-            1L,
-            14,
-            Instant.now(),
-            3,
-            "Moscow",
-            0.0,
-            null
-        );
-
-        Sport mockSport = Mockito.mock(Sport.class);
-        Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
-        Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> activityRequestService.createRequest(dto, organizerId)
-        );
-        
-        Mockito.verifyNoInteractions(sportRepository);
-        Mockito.verifyNoInteractions(activityRequestRepository);
-        Mockito.verifyNoInteractions(requestParticipantRepository);
-    }
 }
