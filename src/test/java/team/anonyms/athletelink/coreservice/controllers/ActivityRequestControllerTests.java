@@ -405,7 +405,6 @@ public class ActivityRequestControllerTests {
             0.0
         );
         UUID userId = UUID.randomUUID();
-        UUID createdId = UUID.randomUUID();
 
         Mockito.when(activityRequestService.createRequest(dto, userId))
                 .thenThrow(new IllegalArgumentException("Sport not found"));
