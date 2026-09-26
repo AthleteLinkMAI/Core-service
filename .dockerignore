@@ -1,0 +1,10 @@
+/src/test/
+target/
+.idea/
+.git/
+*.iml
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+pom.xml
