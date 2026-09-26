@@ -1,5 +1,8 @@
 package team.anonyms.athletelink.coreservice.dto;
 
+import java.time.Instant;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -9,10 +12,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.Instant;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-
 @Schema(description = "Data for creating new request")
 public record CreateActivityRequestDto(
         
@@ -21,8 +20,9 @@ public record CreateActivityRequestDto(
         @Size(max = 100, message = "Title is too long")
         String title,
 
+        @Size(max = 500, message = "Description is too long")
         @Schema(description = "Description of the activity", example = "Outdoor match, bring your own boots")
-        String description, 
+        String description,
 
         @Schema(description = "ID of the sport (from /sports)", example = "2")
         @NotNull(message = "Sport ID is required")

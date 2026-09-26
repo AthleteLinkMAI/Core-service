@@ -246,15 +246,15 @@ public class ActivityRequestController {
     public ResponseEntity<List<ActivityRequestFeedDto>> searchNearbyRequests(
             @DecimalMin(value = "-90.0", message = "Latitude must be >= -90.0")
             @DecimalMax(value = "90.0", message = "Latitude must be <= 90.0")
-            @Parameter(description = "Latitude", example = "55.7558") 
+            @Parameter(description = "Latitude", example = "55.7558")
             @RequestParam("lat") Double lat,
-            
+
             @DecimalMin(value = "-180.0", message = "Longitude must be >= -180.0")
             @DecimalMax(value = "180.0", message = "Longitude must be <= 180.0")
-            @Parameter(description = "Longitude", example = "37.6173") 
+            @Parameter(description = "Longitude", example = "37.6173")
             @RequestParam("lon") Double lon,
             
-            @Parameter(description = "Radius of search in meters", example = "5000") 
+            @Parameter(description = "Radius of search in meters", example = "5000")
             @Positive(message = "Radius cannot be a negative number")
             @RequestParam(value = "radius", defaultValue = "5000") Double radius,
             
