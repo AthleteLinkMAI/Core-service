@@ -78,9 +78,8 @@ public class ActivityRequestControllerTests {
             0.0,
             0.0
         );
-        UUID userId = null;
 
-        Mockito.when(activityRequestService.createRequest(dto, userId)).thenReturn(null);
+        Mockito.when(activityRequestService.createRequest(dto, null)).thenReturn(null);
         
         mockMvc.perform(MockMvcRequestBuilders.post("/requests")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -90,19 +89,18 @@ public class ActivityRequestControllerTests {
         verifyNoInteractions(activityRequestService);
     }
 
-
+    @SuppressWarnings(value = {"DataFlowIssue"})
     @Test
     void testCreateRequest_NullDto() throws Exception {
-        CreateActivityRequestDto dto = null;
         UUID userId = UUID.randomUUID();
         UUID createdId = UUID.randomUUID();
 
-        Mockito.when(activityRequestService.createRequest(dto, userId)).thenReturn(createdId);
+        Mockito.when(activityRequestService.createRequest(null, userId)).thenReturn(createdId);
         
         mockMvc.perform(MockMvcRequestBuilders.post("/requests")
                         .header("X-User-Id", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(dto)))
+                        .content(jsonMapper.writeValueAsString(null)))
                 .andExpect(status().isBadRequest());
         
         verifyNoInteractions(activityRequestService);
@@ -392,7 +390,7 @@ public class ActivityRequestControllerTests {
     
     
     @Test
-    void testCreateRequest_CreateRequestOfActivityRequestServiceReturnIllegalArgumentException() throws Exception {
+    void testCreateRequest_ActivityRequestServiceReturnIllegalArgumentException() throws Exception {
         CreateActivityRequestDto dto = new CreateActivityRequestDto(
             "Football",
             "Friendly match",

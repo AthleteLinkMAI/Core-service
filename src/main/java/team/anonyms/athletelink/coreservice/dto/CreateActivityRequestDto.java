@@ -18,6 +18,7 @@ public record CreateActivityRequestDto(
         @Size(max = 100, message = "Title is too long")
         String title,
 
+        @Size(max = 500, message = "Description is too long")
         @Schema(description = "Description of the activity", example = "Beer drinking contest")
         String description, 
 
