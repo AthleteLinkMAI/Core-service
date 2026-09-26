@@ -9,7 +9,7 @@ public record ActivityRequestFeedDto(
         @Schema(description = "Unique request ID", example = "123e4567-e89b-12d3-a456-426614174000")
         UUID id,
 
-        @Schema(description = "Request title", example = "MAI litrbol in GUK")
+        @Schema(description = "Request title", example = "Friendly football match")
         String title,
         
         @Schema(description = "Sport name", example = "Football")
@@ -21,7 +21,7 @@ public record ActivityRequestFeedDto(
         @Schema(description = "Current number of accepted players", example = "4")
         Integer currentPlayers,
         
-        @Schema(description = "Event start date and time", example = "2026-09-04T18:00:00Z")
+        @Schema(description = "Event start date and time", example = "2030-06-15T18:00:00Z")
         Instant eventDate,
         
         @Schema(description = "Textual address for display in the card", example = "Москва, ул. Константина Царева, 12к1")
@@ -29,6 +29,9 @@ public record ActivityRequestFeedDto(
 
         @Schema(description = "Planned number of rounds/sets", example = "3")
         Integer numberOfRounds,
+
+        @Schema(description = "Whether new players can join the request", example = "true")
+        Boolean registrationOpen,
         
         @Schema(description = "Latitude (for map marker)", example = "55.715551")
         Double latitude,

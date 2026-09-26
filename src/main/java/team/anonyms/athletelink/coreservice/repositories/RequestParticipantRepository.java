@@ -15,4 +15,9 @@ public interface RequestParticipantRepository extends JpaRepository<RequestParti
     long countByActivityRequestIdAndStatus(UUID requestId, ParticipantStatus status);
 
     List<RequestParticipant> findAllByActivityRequestId(UUID requestId);
+
+    List<RequestParticipant> findAllByActivityRequestIdAndStatus(
+            UUID requestId,
+            ParticipantStatus status
+    );
 }

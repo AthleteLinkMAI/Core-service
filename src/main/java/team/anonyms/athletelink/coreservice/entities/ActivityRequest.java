@@ -51,6 +51,11 @@ public class ActivityRequest {
     @NotNull(message = "Number of rounds is required")
     private Integer numberOfRounds;
 
+    @NotNull
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean registrationOpen = true;
+
     @NotNull(message = "Max players count is required")
     private Integer maxPlayers;
 

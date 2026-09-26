@@ -17,6 +17,6 @@ public record SportDto(
         @Schema(description = "Absolute maximum number of players allowed for a match", example = "22")
         Integer maxPlayers,
         
-        @Schema(description = "URL to the sport's icon/image for UI rendering", example = "https://api.athletelink.com/static/icons/football.png")
+        @Schema(description = "Optional URL of the sport icon; may be null")
         String iconUrl
 ) {}
