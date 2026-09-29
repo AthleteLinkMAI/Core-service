@@ -11,4 +11,6 @@ public interface ActivityRoundPlayerResultRepository
 
     List<ActivityRoundPlayerResult>
     findAllByRoundResultId(UUID roundResultId);
+
+    void deleteAllByPlayerId(UUID playerId);
 }

@@ -7,12 +7,21 @@ spring:
     password: password
     driver-class-name: org.postgresql.Driver
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
       properties:
+        enable.idempotence: true
         spring.json.add.type.headers: false
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        key-deserializer: org.apache.kafka.common.serialization.UUIDDeserializer
+        value-deserializer: org.springframework.kafka.support.deserializer.JacksonJsonDeserializer
   
   jpa:
     hibernate:
@@ -25,6 +34,12 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+app:
+  kafka:
+    topics:
+      user-changes: user.changes
+      activity-requests: activity.requests
 
 springdoc:
   swagger-ui:

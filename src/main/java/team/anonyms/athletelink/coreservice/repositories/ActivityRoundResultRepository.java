@@ -18,4 +18,6 @@ public interface ActivityRoundResultRepository
 
     List<ActivityRoundResult>
     findAllByActivityRequestIdOrderByRoundNumberAsc(UUID requestId);
+
+    void deleteAllByRecorderBy(UUID recordedBy);
 }
