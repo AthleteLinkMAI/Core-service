@@ -65,7 +65,6 @@ public class ActivityRequestService {
      *
      * @param dto Data transfer object containing the details of the request to be created
      * @param organizerId ID of the organizer as a string (from the token)
-     * @throws IllegalArgumentException if the sport is not found or the player limit is invalid.
      */
     @Transactional
     public UUID createRequest(CreateActivityRequestDto dto, UUID organizerId) {

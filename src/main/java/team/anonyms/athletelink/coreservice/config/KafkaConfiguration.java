@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-@EnableConfigurationProperties(KafkaConfiguration.class)
+@EnableConfigurationProperties(KafkaTopicProperties.class)
 public class KafkaConfiguration {
     @Bean
     public NewTopic userChangesTopic(KafkaTopicProperties topics) {

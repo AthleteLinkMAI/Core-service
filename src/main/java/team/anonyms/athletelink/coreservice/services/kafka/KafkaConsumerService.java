@@ -37,7 +37,7 @@ public class KafkaConsumerService {
     private void onUserDelete(UUID userId) {
         activityRequestRepository.deleteAllByOrganizerId(userId);
         activityRoundPlayerResultRepository.deleteAllByPlayerId(userId);
-        activityRoundResultRepository.deleteAllByRecorderBy(userId);
+        activityRoundResultRepository.deleteAllByRecordedBy(userId);
         requestParticipantRepository.deleteAllByUserId(userId);
     }
 }

@@ -25,6 +25,7 @@ import team.anonyms.athletelink.coreservice.entities.Sport;
 import team.anonyms.athletelink.coreservice.enums.ParticipantRole;
 import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import team.anonyms.athletelink.coreservice.enums.RequestStatus;
+import team.anonyms.athletelink.coreservice.exceptions.ResourceNotFoundException;
 import team.anonyms.athletelink.coreservice.mappers.ActivityRequestMapper;
 import team.anonyms.athletelink.coreservice.repositories.ActivityRequestRepository;
 import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepository;
@@ -142,7 +143,7 @@ class ActivityRequestServiceTests {
                 IllegalArgumentException.class,
                 () -> activityRequestService.createRequest(dto, organizerId)
         );
-        
+
         assertTrue(exception.getMessage().contains("Players count for football must be between 10 and 22"));
         Mockito.verifyNoInteractions(activityRequestRepository);
         Mockito.verifyNoInteractions(requestParticipantRepository);
@@ -201,9 +202,9 @@ class ActivityRequestServiceTests {
 
         Mockito.when(sportRepository.findById(dto.sportId()))
             .thenReturn(Optional.empty());
-        
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> activityRequestService.createRequest(dto, organizerId)
         );
         
