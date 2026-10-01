@@ -10,18 +10,14 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       properties:
         enable.idempotence: true
-        spring.json.add.type.headers: false
     consumer:
       auto-offset-reset: earliest
-      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      properties:
-        key-deserializer: org.apache.kafka.common.serialization.UUIDDeserializer
-        value-deserializer: org.springframework.kafka.support.deserializer.JacksonJsonDeserializer
+      key-deserializer: org.apache.kafka.common.serialization.UUIDDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   
   jpa:
     hibernate:
@@ -39,7 +35,10 @@ app:
   kafka:
     topics:
       user-changes: user.changes
-      activity-requests: activity.requests
+      game-commands: game.commands
+      game-replies: game.replies
+    outbox:
+      poll-interval-ms: 1000
 
 springdoc:
   swagger-ui:

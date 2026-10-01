@@ -46,6 +46,9 @@ public record ActivityRequestDetailsDto(
         @Schema(description = "Current lifecycle status of the request", example = "PLANNED")
         RequestStatus status,
 
+        @Schema(description = "Reason why the latest asynchronous completion attempt was rejected, if any")
+        String completionErrorMessage,
+
         @Schema(description = "Whether new players can join the request", example = "false")
         Boolean registrationOpen,
         

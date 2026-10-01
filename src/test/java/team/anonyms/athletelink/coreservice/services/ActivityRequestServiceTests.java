@@ -66,6 +66,7 @@ class ActivityRequestServiceTests {
         );
 
         Sport mockSport = Mockito.mock(Sport.class);
+        Mockito.when(mockSport.getIsPlayable()).thenReturn(true);
         Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
         Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
 
@@ -132,6 +133,7 @@ class ActivityRequestServiceTests {
         );
 
         Sport mockSport = Mockito.mock(Sport.class);
+        Mockito.when(mockSport.getIsPlayable()).thenReturn(true);
         Mockito.when(mockSport.getName()).thenReturn("football");
         Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
         Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
@@ -166,6 +168,7 @@ class ActivityRequestServiceTests {
         );
 
         Sport mockSport = Mockito.mock(Sport.class);
+        Mockito.when(mockSport.getIsPlayable()).thenReturn(true);
         Mockito.when(mockSport.getName()).thenReturn("football");
         Mockito.when(mockSport.getMinPlayers()).thenReturn(10);
         Mockito.when(mockSport.getMaxPlayers()).thenReturn(22);
