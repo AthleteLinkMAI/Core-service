@@ -1,6 +1,9 @@
 spring:
   application:
     name: core-service
+  mvc:
+    servlet:
+      path: /api/v1
   datasource:
     url: jdbc:postgresql://localhost:5432/core_db
     username: user
