@@ -54,4 +54,7 @@ server:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
+  file:
+    name: /logs/athletelink-core-service.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
