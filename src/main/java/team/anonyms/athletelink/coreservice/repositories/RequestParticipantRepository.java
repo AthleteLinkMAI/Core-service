@@ -20,4 +20,6 @@ public interface RequestParticipantRepository extends JpaRepository<RequestParti
             UUID requestId,
             ParticipantStatus status
     );
+
+    void deleteAllByUserId(UUID userId);
 }

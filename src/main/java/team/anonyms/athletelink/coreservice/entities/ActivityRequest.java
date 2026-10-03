@@ -33,6 +33,7 @@ public class ActivityRequest {
     private String title;
 
     @Size(max = 1024, message = "Description cannot exceed 1024 characters.")
+    @Column(columnDefinition = "text")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -50,6 +51,12 @@ public class ActivityRequest {
 
     @NotNull(message = "Number of rounds is required")
     private Integer numberOfRounds;
+
+    @Column(name = "completion_attempt_id")
+    private UUID completionAttemptId;
+
+    @Column(name = "completion_error_message", length = 255)
+    private String completionErrorMessage;
 
     @NotNull
     @Builder.Default

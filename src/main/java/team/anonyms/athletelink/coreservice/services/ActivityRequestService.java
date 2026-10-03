@@ -65,13 +65,16 @@ public class ActivityRequestService {
      *
      * @param dto Data transfer object containing the details of the request to be created
      * @param organizerId ID of the organizer as a string (from the token)
-     * @throws IllegalArgumentException if the sport is not found or the player limit is invalid.
      */
     @Transactional
     public UUID createRequest(CreateActivityRequestDto dto, UUID organizerId) {
 
         Sport sport = sportRepository.findById(dto.sportId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sport not found"));
+
+        if (Boolean.FALSE.equals(sport.getIsPlayable())) {
+            throw new IllegalStateException("New requests cannot be created for this sport.");
+        }
 
         if (dto.maxPlayers() < sport.getMinPlayers() || dto.maxPlayers() > sport.getMaxPlayers()) {
             throw new IllegalArgumentException(String.format(

@@ -9,7 +9,9 @@ CREATE TABLE sports (
     name VARCHAR(100) NOT NULL UNIQUE,
     min_players INT NOT NULL DEFAULT 2,
     max_players INT NOT NULL DEFAULT 32,
-    icon_url VARCHAR(255)
+    icon_url VARCHAR(255),
+    is_playable BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT chk_sports_player_limits CHECK (min_players > 0 AND max_players >= min_players)
 );
 
 CREATE TABLE activity_requests (
@@ -22,7 +24,7 @@ CREATE TABLE activity_requests (
     event_date TIMESTAMP WITH TIME ZONE NOT NULL,
     address_text VARCHAR(255) NOT NULL,
 
-    number_of_rounds INT NOT NULL DEFAULT 1,
+    number_of_rounds INT NOT NULL DEFAULT 1 CHECK (number_of_rounds BETWEEN 1 AND 10),
 
     location_point geometry(Point, 4326) NOT NULL,
     status request_status NOT NULL DEFAULT 'PLANNED',
@@ -30,7 +32,10 @@ CREATE TABLE activity_requests (
     organizer_id UUID NOT NULL,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    registration_open BOOLEAN NOT NULL DEFAULT TRUE
+    registration_open BOOLEAN NOT NULL DEFAULT TRUE,
+
+    completion_attempt_id UUID,
+    completion_error_message VARCHAR(255)
 );
 
 CREATE INDEX idx_activity_requests_location ON activity_requests USING GIST (location_point);
@@ -49,36 +54,17 @@ CREATE TABLE request_participants (
     UNIQUE (request_id, user_id)
 );
 
-CREATE TABLE activity_round_results (
+CREATE TABLE outbox_events (
     id UUID PRIMARY KEY,
-    request_id UUID NOT NULL
-        REFERENCES activity_requests(id)
-            ON DELETE CASCADE,
-    round_number INT NOT NULL CHECK (round_number > 0),
-    recorded_by UUID NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE
-        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    UNIQUE (request_id, round_number)
+    aggregate_id UUID NOT NULL,
+    topic VARCHAR(255) NOT NULL,
+    payload TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    published_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE TABLE activity_round_player_results (
-    id UUID PRIMARY KEY,
-    round_result_id UUID NOT NULL
-        REFERENCES activity_round_results(id)
-            ON DELETE CASCADE,
-    player_id UUID NOT NULL,
-    outcome VARCHAR(8) NOT NULL
-        CHECK (outcome IN ('WIN', 'LOSS')),
-
-    UNIQUE (round_result_id, player_id)
-);
-
-CREATE INDEX idx_round_results_request
-    ON activity_round_results(request_id);
-
-CREATE INDEX idx_round_player_results_player
-    ON activity_round_player_results(player_id);
+CREATE INDEX idx_outbox_events_pending
+    ON outbox_events(created_at, id) WHERE published_at IS NULL;
 
 
 INSERT INTO sports (name, min_players, max_players) VALUES

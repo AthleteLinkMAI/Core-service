@@ -63,4 +63,6 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
         WHERE ar.id = :id
         """)
     Optional<ActivityRequest> findByIdForUpdate(@Param("id") UUID requestId);
+
+    void deleteAllByOrganizerId(UUID organizerId);
 }

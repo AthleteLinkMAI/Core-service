@@ -19,7 +19,7 @@ public class SportService {
     }
 
     /**
-     * Gets a list of all available sports, including their details such as name, player limits, and icon URL.
+     * Gets the catalog, including inactive sports needed to display historical requests.
      *
      * @return A list of all available sports.
      */
@@ -30,7 +30,8 @@ public class SportService {
                         sport.getName(),
                         sport.getMinPlayers(),
                         sport.getMaxPlayers(),
-                        sport.getIconUrl()
+                          sport.getIconUrl(),
+                          sport.getIsPlayable()
                 ))
                 .toList();
     }
