@@ -1,0 +1,11 @@
+/src/test/
+target/
+.idea/
+.git/
+.env
+.env.*
+*.iml
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml

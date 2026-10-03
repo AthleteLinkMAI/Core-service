@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: core-service
+  mvc:
+    servlet:
+      path: /api/v1
+  datasource:
+    url: jdbc:postgresql://localhost:5432/core_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.UUIDDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+app:
+  kafka:
+    topics:
+      user-changes: user.changes
+      game-commands: game.commands
+      game-replies: game.replies
+    outbox:
+      poll-interval-ms: 1000
+
+springdoc:
+  swagger-ui:
+    path: /swagger
+    operationsSorter: method
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: /logs/athletelink-core-service.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
