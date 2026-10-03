@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("app.kafka.topics")
 public record KafkaTopicProperties(
         String userChanges,
-        String activityRequests
+        String gameCommands,
+        String gameReplies
 ) {
 }

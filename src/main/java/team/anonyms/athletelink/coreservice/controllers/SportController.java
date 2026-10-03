@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/sports")
-@Tag(name = "Sports", description = "Read the sports and player limits available for activity requests")
+@Tag(name = "Sports", description = "Read the sport catalog and whether each sport accepts new requests")
 public class SportController {
 
     private final SportService sportService;
@@ -25,10 +25,10 @@ public class SportController {
 
     @GetMapping
     @Operation(
-            summary = "List available sports",
-            description = "Returns sports with their minimum and maximum player counts."
+            summary = "List sports",
+            description = "Returns all sports, including those no longer playable, with player limits and isPlayable."
     )
-    @ApiResponse(responseCode = "200", description = "Available sports, possibly empty")
+    @ApiResponse(responseCode = "200", description = "Sport catalog, possibly empty")
     public ResponseEntity<List<SportDto>> getAllSports() {
         return ResponseEntity.ok(sportService.getAllSports());
     }

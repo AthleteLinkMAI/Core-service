@@ -20,7 +20,7 @@ public class Sport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(max = 50, message = "Sport name cannot exceed 50 characters")
+    @Size(max = 100, message = "Sport name cannot exceed 100 characters")
     @NotBlank(message = "Sport name is required")
     private String name;
 
@@ -31,6 +31,10 @@ public class Sport {
     private Integer maxPlayers;
 
     @Size(max = 255, message = "Icon URL cannot exceed 255 characters")
-    @NotBlank(message = "Icon URL is required")
     private String iconUrl;
+
+    @NotNull
+    @Builder.Default
+    @Column(name = "is_playable", nullable = false)
+    private Boolean isPlayable = true;
 }

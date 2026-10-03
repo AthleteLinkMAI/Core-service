@@ -72,6 +72,10 @@ public class ActivityRequestService {
         Sport sport = sportRepository.findById(dto.sportId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sport not found"));
 
+        if (Boolean.FALSE.equals(sport.getIsPlayable())) {
+            throw new IllegalStateException("New requests cannot be created for this sport.");
+        }
+
         if (dto.maxPlayers() < sport.getMinPlayers() || dto.maxPlayers() > sport.getMaxPlayers()) {
             throw new IllegalArgumentException(String.format(
                     "Players count for %s must be between %d and %d", 

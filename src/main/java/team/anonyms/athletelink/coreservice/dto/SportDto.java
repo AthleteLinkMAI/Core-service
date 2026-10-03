@@ -18,5 +18,8 @@ public record SportDto(
         Integer maxPlayers,
         
         @Schema(description = "Optional URL of the sport icon; may be null")
-        String iconUrl
+        String iconUrl,
+
+        @Schema(description = "Whether new activity requests may be created for this sport")
+        Boolean isPlayable
 ) {}
