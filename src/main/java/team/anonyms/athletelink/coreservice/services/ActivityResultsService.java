@@ -120,8 +120,7 @@ public class ActivityResultsService {
     /** Applies only the answer for the currently pending attempt. Duplicate and stale replies are harmless. */
     @Transactional
     public void resolveCompletion(CloseRequestResolvedDto reply) {
-        if (reply == null || reply.requestId() == null || reply.attemptId() == null
-                || reply.successful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
+        if (reply == null || reply.requestId() == null || reply.successful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
             throw new IllegalArgumentException("Malformed request completion reply.");
         }
         var request = activityRequestRepository.findByIdForUpdate(reply.requestId());
@@ -129,8 +128,7 @@ public class ActivityResultsService {
             return; // The request may have been removed after an account deletion.
         }
         ActivityRequest activityRequest = request.get();
-        if (activityRequest.getStatus() != RequestStatus.CONFIRMATION
-                || !reply.attemptId().equals(activityRequest.getCompletionAttemptId())) {
+        if (activityRequest.getStatus() != RequestStatus.CONFIRMATION) {
             return;
         }
 
