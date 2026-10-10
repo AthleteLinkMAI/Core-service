@@ -1,0 +1,64 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKERHUB_USER: kekishev
+  DOCKERHUB_REPOSITORY_NAME: athlete-link-core-service
+
+test-job:
+  stage: test
+  image: maven:4.0.0-rc-7-eclipse-temurin-25-noble
+  script:
+    - mvn test
+  only:
+    - merge_requests
+    - main
+
+.docker_template:
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker -v
+    - docker info
+    - docker login docker.io -u "$DOCKERHUB_LOGIN" -p "$DOCKERHUB_PASSWORD"
+
+build-job:
+  image: docker:27
+  stage: build
+  extends: .docker_template
+  script:
+    - docker build -t $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest .
+    - docker push $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest
+  only:
+    - main
+
+.deploy_template:
+  image: kroniak/ssh-client:latest
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - >-
+      echo -e "Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile
+      /dev/null" > ~/.ssh/config
+    - chmod 600 ~/.ssh/id_ed25519
+
+deploy-job:
+  image: docker:27
+  stage: deploy
+  extends: .deploy_template
+  script:
+    - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
+      cd /root/projects/athlete-link &&
+      docker stop  athlete-link-backend-core-service-1 || true &&
+      docker rm    athlete-link-backend-core-service-1 || true &&
+      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest &&
+      docker compose up -d
+      "
+  only:
+    - main
+  when: manual
