@@ -1,12 +1,15 @@
 package team.anonyms.athletelink.coreservice.services.kafka;
 
 import org.junit.jupiter.api.Test;
+import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestResolvedDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.GameRoundResultDto;
 import team.anonyms.athletelink.coreservice.enums.RoundOutcome;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,9 +32,19 @@ class KafkaContractJsonTests {
 
     @Test
     void gameClosureReplyCanBeDeserialized() throws Exception {
-        var reply = new CloseRequestResolvedDto(CloseRequestResolvedDto.TYPE,
-                UUID.randomUUID(), UUID.randomUUID(), false, "Round 2 is missing");
+        var reply = new CloseRequestResolvedDto(UUID.randomUUID(),
+                CloseRequestResolvedDto.TYPE, false, "Round 2 is missing");
 
         assertEquals(reply, mapper.readValue(mapper.writeValueAsString(reply), CloseRequestResolvedDto.class));
+    }
+
+    @Test
+    void closureCommandContainsOnlyContractFields() throws Exception {
+        var command = new CloseRequestDto(UUID.randomUUID(), 3);
+        String json = mapper.writeValueAsString(command);
+
+        assertEquals(Set.of("type", "requestId", "expectedRounds"),
+                mapper.readValue(json, Map.class).keySet());
+        assertEquals(command, mapper.readValue(json, CloseRequestDto.class));
     }
 }

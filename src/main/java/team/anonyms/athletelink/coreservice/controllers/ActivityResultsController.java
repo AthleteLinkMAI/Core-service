@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +32,7 @@ import java.util.UUID;
 @Tag(name = "Round submissions and completion", description = "Game Service stores and scores round results asynchronously")
 @RequiredArgsConstructor
 public class ActivityResultsController {
+    private static final Logger logger = LoggerFactory.getLogger(ActivityResultsController.class);
     private final ActivityResultsService activityResultsService;
 
     @PostMapping("/rounds/{roundNumber}/result")
@@ -48,12 +51,19 @@ public class ActivityResultsController {
             @RequestHeader("X-User-Id") UUID organizerId,
             @Valid @RequestBody RecordRoundResultRequestDto dto
     ) {
+        logger.atInfo()
+                .setMessage("Organizer is submitting a round result")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{requestId}/rounds/{roundNumber}/result")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("roundNumber", roundNumber)
+                .addKeyValue("organizerId", organizerId)
+                .log();
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(
                 activityResultsService.recordRoundResult(requestId, roundNumber, organizerId, dto));
     }
 
     @PostMapping("/complete")
-    @Operation(summary = "Request asynchronous completion", description = "Core moves the request to CONFIRMATION and queues a Game Service check. Poll GET /requests/{requestId} for COMPLETED or ACTIVE with completionErrorMessage. A repeated call while pending returns the same attempt ID.")
+    @Operation(summary = "Request asynchronous completion", description = "Core moves the request to CONFIRMATION and queues a Game Service check. Poll GET /requests/{requestId} for COMPLETED or ACTIVE with completionErrorMessage. A repeated call while pending does not queue another command.")
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Completion check queued"),
             @ApiResponse(responseCode = "403", description = "Caller is not the organizer", content = @Content(schema = @Schema(implementation = ApiError.class))),
@@ -65,6 +75,12 @@ public class ActivityResultsController {
             @Parameter(description = "Caller UUID supplied by the trusted API Gateway; Core does not verify the JWT")
             @RequestHeader("X-User-Id") UUID organizerId
     ) {
+        logger.atInfo()
+                .setMessage("Organizer is requesting activity completion")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{requestId}/complete")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("organizerId", organizerId)
+                .log();
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(
                 activityResultsService.completeRequest(requestId, organizerId));
     }

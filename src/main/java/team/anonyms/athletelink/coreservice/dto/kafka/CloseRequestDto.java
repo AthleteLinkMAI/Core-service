@@ -6,12 +6,11 @@ import java.util.UUID;
 public record CloseRequestDto(
         String type,
         UUID requestId,
-        UUID attemptId,
         Integer expectedRounds
 ) {
     public static final String TYPE = "CLOSE_REQUESTED";
 
-    public CloseRequestDto(UUID requestId, UUID attemptId, Integer expectedRounds) {
-        this(TYPE, requestId, attemptId, expectedRounds);
+    public CloseRequestDto(UUID requestId, Integer expectedRounds) {
+        this(TYPE, requestId, expectedRounds);
     }
 }

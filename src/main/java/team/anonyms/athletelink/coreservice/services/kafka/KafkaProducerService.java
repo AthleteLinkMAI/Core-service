@@ -27,7 +27,7 @@ public class KafkaProducerService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueCloseRequest(CloseRequestDto event) {
-        enqueue(event.attemptId(), event.requestId(), event);
+        enqueue(UUID.randomUUID(), event.requestId(), event);
     }
 
     private void enqueue(UUID eventId, UUID requestId, Object event) {
