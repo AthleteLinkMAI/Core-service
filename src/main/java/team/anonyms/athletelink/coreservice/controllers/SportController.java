@@ -3,6 +3,8 @@ package team.anonyms.athletelink.coreservice.controllers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +19,8 @@ import java.util.List;
 @Tag(name = "Sports", description = "Read the sport catalog and whether each sport accepts new requests")
 public class SportController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SportController.class);
+
     private final SportService sportService;
 
     public SportController(SportService sportService) {
@@ -30,6 +34,10 @@ public class SportController {
     )
     @ApiResponse(responseCode = "200", description = "Sport catalog, possibly empty")
     public ResponseEntity<List<SportDto>> getAllSports() {
+        logger.atInfo()
+                .setMessage("User is fetching the sports catalog")
+                .addKeyValue("API endpoint", "GET /api/v1/sports")
+                .log();
         return ResponseEntity.ok(sportService.getAllSports());
     }
 }

@@ -34,7 +34,6 @@ CREATE TABLE activity_requests (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     registration_open BOOLEAN NOT NULL DEFAULT TRUE,
 
-    completion_attempt_id UUID,
     completion_error_message VARCHAR(255)
 );
 

@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -78,24 +77,20 @@ class ActivityResultsServiceTests {
     }
 
     @Test
-    void closesOnlyAfterMatchingGameReplyAndIgnoresStaleReply() {
+    void completesAfterGameReplyAndDoesNotQueueDuplicateCheck() {
         ActivityRequest request = activeRequest();
         when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(request));
 
         var accepted = service.completeRequest(requestId, organizerId);
-        assertNotNull(accepted.attemptId());
+        assertEquals(requestId, accepted.requestId());
+        assertEquals(RequestStatus.CONFIRMATION, accepted.status());
         assertEquals(RequestStatus.CONFIRMATION, request.getStatus());
+
+        assertEquals(accepted, service.completeRequest(requestId, organizerId));
         verify(producer).enqueueCloseRequest(any());
 
-        var sameAttempt = service.completeRequest(requestId, organizerId);
-        assertEquals(accepted.attemptId(), sameAttempt.attemptId());
-
         service.resolveCompletion(new CloseRequestResolvedDto(
-                CloseRequestResolvedDto.TYPE, requestId, UUID.randomUUID(), true, null));
-        assertEquals(RequestStatus.CONFIRMATION, request.getStatus());
-
-        service.resolveCompletion(new CloseRequestResolvedDto(
-                CloseRequestResolvedDto.TYPE, requestId, accepted.attemptId(), true, null));
+                requestId, CloseRequestResolvedDto.TYPE, true, null));
         assertEquals(RequestStatus.COMPLETED, request.getStatus());
     }
 
@@ -103,10 +98,10 @@ class ActivityResultsServiceTests {
     void rejectedCompletionReopensRequestWithReason() {
         ActivityRequest request = activeRequest();
         when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(request));
-        UUID attemptId = service.completeRequest(requestId, organizerId).attemptId();
+        service.completeRequest(requestId, organizerId);
 
         service.resolveCompletion(new CloseRequestResolvedDto(
-                CloseRequestResolvedDto.TYPE, requestId, attemptId, false, "Round 2 is missing"));
+                requestId, CloseRequestResolvedDto.TYPE, false, "Round 2 is missing"));
 
         assertEquals(RequestStatus.ACTIVE, request.getStatus());
         assertEquals("Round 2 is missing", request.getCompletionErrorMessage());

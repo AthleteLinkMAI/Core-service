@@ -5,9 +5,8 @@ import team.anonyms.athletelink.coreservice.enums.RequestStatus;
 
 import java.util.UUID;
 
-@Schema(description = "A request completion attempt is waiting for Game Service verification")
+@Schema(description = "A request completion check is waiting for Game Service verification")
 public record CompletionAcceptedDto(
         UUID requestId,
-        UUID attemptId,
         RequestStatus status
 ) {}

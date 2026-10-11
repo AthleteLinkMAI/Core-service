@@ -35,8 +35,7 @@ class KafkaOutboxTests {
     @Test
     void closeCommandIsStoredWithTheRequestAsKafkaKey() throws Exception {
         UUID requestId = UUID.randomUUID();
-        UUID attemptId = UUID.randomUUID();
-        CloseRequestDto command = new CloseRequestDto(requestId, attemptId, 3);
+        CloseRequestDto command = new CloseRequestDto(requestId, 3);
         when(topics.gameCommands()).thenReturn("game.commands");
         when(objectMapper.writeValueAsString(command)).thenReturn("{\"type\":\"CLOSE_REQUESTED\"}");
 
@@ -44,7 +43,7 @@ class KafkaOutboxTests {
 
         var event = org.mockito.ArgumentCaptor.forClass(OutboxEvent.class);
         verify(repository).save(event.capture());
-        assertEquals(attemptId, event.getValue().getId());
+        assertNotNull(event.getValue().getId());
         assertEquals(requestId, event.getValue().getAggregateId());
         assertEquals("game.commands", event.getValue().getTopic());
         assertNull(event.getValue().getPublishedAt());
