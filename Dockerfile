@@ -6,12 +6,12 @@ RUN ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 WORKDIR /app
 COPY pom.xml ./
 COPY src/main ./src/main
-RUN mvn -B -ntp -DskipTests package
+RUN mvn -B -ntp -Pnative -DskipTests native:compile
 
 FROM debian:bookworm-slim
 WORKDIR /app
 RUN mkdir -p /logs && chown 10001:10001 /logs
-COPY --from=build /app/target/athelete-link-auth-service-0.0.1.jar /app.jar
+COPY --from=build /app/target/core-service /app/target/*.so /app/
 USER 10001:10001
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["/app/core-service"]
