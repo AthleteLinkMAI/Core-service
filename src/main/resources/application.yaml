@@ -4,6 +4,9 @@ spring:
   mvc:
     servlet:
       path: /api/v1
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/core_db
     username: user
