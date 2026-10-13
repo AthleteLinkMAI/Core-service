@@ -154,6 +154,9 @@ public class ActivityRequestService {
             if (existing.getStatus() == ParticipantStatus.KICKED) {
                 throw new IllegalStateException("You were kicked from this request and cannot rejoin");
             }
+            if (existing.getStatus() == ParticipantStatus.PENDING) {
+                throw new IllegalStateException("Your request to join is already pending");
+            }
             
             if (existing.getStatus() == ParticipantStatus.LEFT) {
                 checkCapacity(request);

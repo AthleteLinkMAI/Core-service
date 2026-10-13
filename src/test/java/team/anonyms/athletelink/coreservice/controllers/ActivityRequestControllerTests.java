@@ -390,7 +390,7 @@ public class ActivityRequestControllerTests {
     
     
     @Test
-    void testCreateRequest_ActivityRequestServiceReturnIllegalArgumentException() throws Exception {
+    void testCreateRequest_PlayerCountIsOutsideLimits() throws Exception {
         CreateActivityRequestDto dto = new CreateActivityRequestDto(
             "Football",
             "Friendly match",
@@ -405,7 +405,7 @@ public class ActivityRequestControllerTests {
         UUID userId = UUID.randomUUID();
 
         Mockito.when(activityRequestService.createRequest(dto, userId))
-                .thenThrow(new IllegalArgumentException("Sport not found"));
+                .thenThrow(new IllegalArgumentException("Player count is outside sport limits"));
         
         mockMvc.perform(MockMvcRequestBuilders.post("/requests")
                         .header("X-User-Id", userId.toString())
@@ -415,6 +415,37 @@ public class ActivityRequestControllerTests {
         
         verify(activityRequestService)
                 .createRequest(any(CreateActivityRequestDto.class), eq(userId));
+    }
+
+    @Test
+    void testCreateRequest_SportIsInactive() throws Exception {
+        CreateActivityRequestDto dto = new CreateActivityRequestDto(
+                "Football",
+                "Friendly match",
+                1L,
+                14,
+                Instant.now().plus(1, ChronoUnit.DAYS),
+                3,
+                "Moscow",
+                0.0,
+                0.0
+        );
+        UUID userId = UUID.randomUUID();
+
+        Mockito.when(activityRequestService.createRequest(dto, userId))
+                .thenThrow(new IllegalStateException("New requests cannot be created for this sport."));
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/requests")
+                        .header("X-User-Id", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonMapper.writeValueAsString(dto)))
+                .andExpect(status().isConflict())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value("CONFLICT"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("New requests cannot be created for this sport."));
+
+        verify(activityRequestService)
+                .createRequest(eq(dto), eq(userId));
     }
 
 }

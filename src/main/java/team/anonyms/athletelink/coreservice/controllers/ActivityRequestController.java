@@ -51,7 +51,8 @@ public class ActivityRequestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Request created; response contains requestId"),
             @ApiResponse(responseCode = "400", description = "Invalid request data or player limit", content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class)))
+            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "409", description = "New requests cannot be created for this sport", content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     public ResponseEntity<Map<String, UUID>> createRequest(
             @RequestBody @Valid CreateActivityRequestDto dto,

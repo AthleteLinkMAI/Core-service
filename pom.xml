@@ -80,6 +80,16 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.hibernate.orm</groupId>
 			<artifactId>hibernate-spatial</artifactId>
 		</dependency>

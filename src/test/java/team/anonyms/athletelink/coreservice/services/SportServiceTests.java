@@ -68,6 +68,9 @@ class SportServiceTests {
         assertEquals("1", sports.get(0).iconUrl());
         assertNull(sports.get(1).iconUrl());
 
+        assertTrue(sports.get(0).isPlayable());
+        assertFalse(sports.get(1).isPlayable());
+
         assertNotEquals(sports.get(0).id(), sports.get(1).id());
         assertNotEquals(sports.get(0).isPlayable(), sports.get(1).isPlayable());
     }
