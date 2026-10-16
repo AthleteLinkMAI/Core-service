@@ -1,0 +1,39 @@
+loki.source.file "core_service" {
+  targets = [
+    {
+      __path__ = "/var/log/core/athletelink-core-service.log",
+      job      = "core-service",
+    },
+  ]
+
+  forward_to = [loki.process.core_service.receiver]
+}
+
+loki.process "core_service" {
+  stage.json {
+    expressions = {
+      ts    = "\"@timestamp\"",
+      level = "log.level",
+    }
+  }
+
+  stage.timestamp {
+    source            = "ts"
+    format            = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+
+  stage.labels {
+    values = {
+      level = "level",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
