@@ -118,7 +118,7 @@ public class ActivityResultsService {
     /** Applies a reply only while the request is awaiting confirmation. */
     @Transactional
     public void resolveCompletion(CloseRequestResolvedDto reply) {
-        if (reply == null || reply.requestId() == null || reply.successful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
+        if (reply == null || reply.requestId() == null || reply.isSuccessful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
             throw new IllegalArgumentException("Malformed request completion reply.");
         }
         var request = activityRequestRepository.findByIdForUpdate(reply.requestId());
@@ -130,14 +130,14 @@ public class ActivityResultsService {
             return;
         }
 
-        if (reply.successful()) {
+        if (reply.isSuccessful()) {
             activityRequest.setStatus(RequestStatus.COMPLETED);
             activityRequest.setCompletionErrorMessage(null);
         } else {
             activityRequest.setStatus(RequestStatus.ACTIVE);
-            String message = reply.reason() == null || reply.reason().isBlank()
+            String message = reply.errorMessage() == null || reply.errorMessage().isBlank()
                     ? "Game Service could not confirm all round results."
-                    : reply.reason();
+                    : reply.errorMessage();
             activityRequest.setCompletionErrorMessage(message.substring(0, Math.min(message.length(), 255)));
         }
     }
