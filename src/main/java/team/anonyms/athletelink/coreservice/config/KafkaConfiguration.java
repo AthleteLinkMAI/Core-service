@@ -17,8 +17,13 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public NewTopic gameCommandsTopic(KafkaTopicProperties topics) {
-        return TopicBuilder.name(topics.gameCommands()).partitions(3).replicas(1).build();
+    public NewTopic gameRoundsTopic(KafkaTopicProperties topics) {
+        return TopicBuilder.name(topics.gameSubmitRounds()).partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic gameClosingsTopic(KafkaTopicProperties topics) {
+        return TopicBuilder.name(topics.gameCloseRequests()).partitions(3).replicas(1).build();
     }
 
     @Bean
