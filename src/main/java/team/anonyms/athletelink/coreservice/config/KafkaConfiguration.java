@@ -17,12 +17,12 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public NewTopic gameRoundsTopic(KafkaTopicProperties topics) {
+    public NewTopic gameSubmitRoundsTopic(KafkaTopicProperties topics) {
         return TopicBuilder.name(topics.gameSubmitRounds()).partitions(3).replicas(1).build();
     }
 
     @Bean
-    public NewTopic gameClosingsTopic(KafkaTopicProperties topics) {
+    public NewTopic gameCloseRequestsTopic(KafkaTopicProperties topics) {
         return TopicBuilder.name(topics.gameCloseRequests()).partitions(3).replicas(1).build();
     }
 
