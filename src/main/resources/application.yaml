@@ -38,7 +38,8 @@ app:
   kafka:
     topics:
       user-changes: user.changes
-      game-commands: game.commands
+      game-submit-rounds: game.submit.rounds
+      game-close-requests: game.close.requests
       game-replies: game.replies
     outbox:
       poll-interval-ms: 1000
