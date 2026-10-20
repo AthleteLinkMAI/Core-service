@@ -7,11 +7,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
-import team.anonyms.athletelink.coreservice.dto.ParticipantDto;
-import team.anonyms.athletelink.coreservice.dto.UpdateActivityRequestDto;
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
+import team.anonyms.athletelink.coreservice.dto.*;
 
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
 import team.anonyms.athletelink.coreservice.entities.RequestParticipant;
@@ -26,9 +22,11 @@ import team.anonyms.athletelink.coreservice.repositories.ActivityRequestReposito
 import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepository;
 import team.anonyms.athletelink.coreservice.repositories.SportRepository;
 
-import java.util.UUID;
-import java.util.Optional;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.*;
 import java.time.Instant;
 
 /**
@@ -42,6 +40,7 @@ public class ActivityRequestService {
     private final SportRepository sportRepository;
 
     private final ActivityRequestMapper requestMapper;
+    private static final int REQUESTS_PAGE_SIZE = 20;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -475,6 +474,69 @@ public class ActivityRequestService {
             return requestMapper.toFeedDto(request, currentPlayers);
             
         }).toList();
+    }
+
+    /**
+     * Returns a page of requests associated with the specified user, including inactive requests.
+     * Without a status filter, every request status is included. Organizer-only mode excludes
+     * requests where the user is solely a participant.
+     *
+     * @param userId user whose requests are queried
+     * @param filterStatuses request statuses to include, or {@code null} for all statuses
+     * @param pageNumber zero-based page number
+     * @param forOrganizer whether to return only requests organized by the user
+     * @return a page of request summaries, possibly empty
+     */
+    @Transactional(readOnly = true)
+    public Page<ActivityRequestInformationDto> getRequestsByUserId(
+            UUID userId,
+            Set<RequestStatus> filterStatuses,
+            Integer pageNumber,
+            Boolean forOrganizer
+    ) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (pageNumber == null || pageNumber < 0) {
+            throw new IllegalArgumentException("pageNumber must be >= 0");
+        }
+
+        Pageable pageable = PageRequest.of(pageNumber, REQUESTS_PAGE_SIZE);
+
+        if (filterStatuses != null && filterStatuses.isEmpty()) {
+            throw new IllegalArgumentException("statuses must be omitted or non-empty");
+        }
+
+        Set<RequestStatus> statuses = filterStatuses == null
+                ? EnumSet.allOf(RequestStatus.class)
+                : EnumSet.copyOf(filterStatuses);
+
+        Page<ActivityRequest> requests = Boolean.TRUE.equals(forOrganizer)
+                ? activityRequestRepository.findAllCreatedByUser(userId, statuses, pageable)
+                : activityRequestRepository.findAllForUser(userId, statuses, pageable);
+
+        return requests.map(request -> {
+            int currentPlayers = Math.toIntExact(
+                    requestParticipantRepository.countByActivityRequestIdAndStatus(
+                            request.getId(), ParticipantStatus.ACCEPTED
+                    )
+            );
+
+            return new ActivityRequestInformationDto(
+                    request.getId(),
+                    request.getTitle(),
+                    request.getSport().getName(),
+                    request.getMaxPlayers(),
+                    currentPlayers,
+                    request.getEventDate(),
+                    request.getAddressText(),
+                    request.getNumberOfRounds(),
+                    request.getStatus(),
+                    request.getRegistrationOpen(),
+                    request.getLocationPoint().getY(),
+                    request.getLocationPoint().getX()
+            );
+        });
     }
 
     /**

@@ -44,7 +44,7 @@ class KafkaOutboxTests {
     void closeCommandIsStoredWithTheRequestAsKafkaKey() throws Exception {
         UUID requestId = UUID.randomUUID();
         CloseRequestDto command = new CloseRequestDto(requestId, 3);
-        when(topics.gameCommands()).thenReturn("game.commands");
+        when(topics.gameCloseRequests()).thenReturn("game.close-requests");
         when(objectMapper.writeValueAsString(command)).thenReturn("{\"type\":\"CLOSE_REQUESTED\"}");
 
         producer.enqueueCloseRequest(command);
@@ -53,7 +53,7 @@ class KafkaOutboxTests {
         verify(repository).save(event.capture());
         assertNotNull(event.getValue().getId());
         assertEquals(requestId, event.getValue().getAggregateId());
-        assertEquals("game.commands", event.getValue().getTopic());
+        assertEquals("game.close-requests", event.getValue().getTopic());
         assertEquals("{\"type\":\"CLOSE_REQUESTED\"}", event.getValue().getPayload());
         assertNotNull(event.getValue().getCreatedAt());
         assertNull(event.getValue().getPublishedAt());
@@ -65,7 +65,7 @@ class KafkaOutboxTests {
         UUID requestId = UUID.randomUUID();
         GameRoundResultDto command = new GameRoundResultDto(eventId, requestId, 2, 7L,
                 UUID.randomUUID(), List.of(new GameRoundResultDto.PlayerResult(UUID.randomUUID(), RoundOutcome.WIN)));
-        when(topics.gameCommands()).thenReturn("game.commands");
+        when(topics.gameSubmitRounds()).thenReturn("game.submit-rounds");
         when(objectMapper.writeValueAsString(command)).thenReturn("{\"type\":\"ROUND_RESULT_SUBMITTED\"}");
 
         producer.enqueueRoundResult(command);
@@ -74,7 +74,7 @@ class KafkaOutboxTests {
         verify(repository).save(saved.capture());
         assertEquals(eventId, saved.getValue().getId());
         assertEquals(requestId, saved.getValue().getAggregateId());
-        assertEquals("game.commands", saved.getValue().getTopic());
+        assertEquals("game.submit-rounds", saved.getValue().getTopic());
         assertEquals("{\"type\":\"ROUND_RESULT_SUBMITTED\"}", saved.getValue().getPayload());
         assertNull(saved.getValue().getPublishedAt());
     }
@@ -105,7 +105,7 @@ class KafkaOutboxTests {
 
     @Test
     void failedKafkaSendLeavesEventPendingForRetry() {
-        OutboxEvent event = new OutboxEvent(UUID.randomUUID(), UUID.randomUUID(), "game.commands", "{}");
+        OutboxEvent event = new OutboxEvent(UUID.randomUUID(), UUID.randomUUID(), "game.submit-rounds", "{}");
         when(repository.findFirstByPublishedAtIsNullOrderByCreatedAtAscIdAsc())
                 .thenReturn(Optional.of(event));
         when(kafkaTemplate.send(event.getTopic(), event.getAggregateId(), event.getPayload()))

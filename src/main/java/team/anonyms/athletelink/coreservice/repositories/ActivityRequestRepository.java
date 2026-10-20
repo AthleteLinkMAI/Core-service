@@ -1,12 +1,17 @@
 package team.anonyms.athletelink.coreservice.repositories;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 import team.anonyms.athletelink.coreservice.entities.ActivityRequest;
+import team.anonyms.athletelink.coreservice.enums.RequestStatus;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +25,6 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
      * are within the specified radius from the given coordinates. 
      * If a sport ID is provided, it filters requests for that specific sport.
      * The filtered requests are ordered by their distance from the provided coordinates.
-     * 
      * How it works in detail:
      * 1. ST_MakePoint(:lon, :lat) - creates a Point object from user coordinates 
      * (longitude (долгота) X, then latitude (широта Y).
@@ -30,20 +34,20 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
      * 5. ST_Distance - calculates the distance for sorting requests (from closest one to farthest in radius).
      */
     @Query(value = """
-            SELECT * FROM activity_requests 
+            SELECT * FROM activity_requests
             WHERE status = 'PLANNED'
               AND registration_open = TRUE
-              AND event_date > CURRENT_TIMESTAMP 
-              AND (CAST(:sportId AS BIGINT) IS NULL OR sport_id = CAST(:sportId AS BIGINT)) 
+              AND event_date > CURRENT_TIMESTAMP
+              AND (CAST(:sportId AS BIGINT) IS NULL OR sport_id = CAST(:sportId AS BIGINT))
               AND (CAST(:startDate AS timestamptz) IS NULL OR event_date >= CAST(:startDate AS timestamptz))
               AND (CAST(:endDate AS timestamptz) IS NULL OR event_date <= CAST(:endDate AS timestamptz))
               AND ST_DWithin(
-                  location_point::geography, 
-                  ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, 
+                  location_point::geography,
+                  ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
                   :radius
               )
             ORDER BY ST_Distance(
-                location_point::geography, 
+                location_point::geography,
                 ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography
             ) ASC
             """, nativeQuery = true)
@@ -63,6 +67,63 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
         WHERE ar.id = :id
         """)
     Optional<ActivityRequest> findByIdForUpdate(@Param("id") UUID requestId);
+
+    /**
+     * Finds requests organized by the user or associated with any of their participation records,
+     * limited to the supplied request statuses.
+     */
+    @EntityGraph(attributePaths = "sport")
+    @Query(
+            value = """
+        SELECT r FROM ActivityRequest r
+        WHERE (
+            r.organizerId = :userId
+            OR EXISTS (
+                SELECT p.id FROM RequestParticipant p
+                WHERE p.activityRequest = r AND p.userId = :userId
+            )
+                    )
+                    AND r.status IN :statuses
+        ORDER BY r.eventDate DESC, r.id DESC
+        """,
+            countQuery = """
+        SELECT count(r) FROM ActivityRequest r
+        WHERE (
+            r.organizerId = :userId
+            OR EXISTS (
+                SELECT p.id FROM RequestParticipant p
+                WHERE p.activityRequest = r AND p.userId = :userId
+            )
+        )
+        AND r.status IN :statuses
+        """
+    )
+    Page<ActivityRequest> findAllForUser(
+            @Param("userId") UUID userId,
+            @Param("statuses") Collection<RequestStatus> statuses,
+            Pageable pageable
+    );
+
+    /** Finds requests organized by the user, limited to the supplied request statuses. */
+    @EntityGraph(attributePaths = "sport")
+    @Query(
+            value = """
+        SELECT r FROM ActivityRequest r
+        WHERE r.organizerId = :userId
+          AND r.status IN :statuses
+        ORDER BY r.eventDate DESC, r.id DESC
+        """,
+            countQuery = """
+        SELECT count(r) FROM ActivityRequest r
+        WHERE r.organizerId = :userId
+          AND r.status IN :statuses
+        """
+    )
+    Page<ActivityRequest> findAllCreatedByUser(
+            @Param("userId") UUID userId,
+            @Param("statuses") Collection<RequestStatus> statuses,
+            Pageable pageable
+    );
 
     void deleteAllByOrganizerId(UUID organizerId);
 }
