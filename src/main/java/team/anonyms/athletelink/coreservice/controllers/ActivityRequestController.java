@@ -6,14 +6,14 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
-import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
-import team.anonyms.athletelink.coreservice.dto.UpdateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.dto.*;
+import team.anonyms.athletelink.coreservice.enums.RequestStatus;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import team.anonyms.athletelink.coreservice.exceptions.GlobalExceptionHandler.ApiError;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.time.Instant;
@@ -51,7 +52,8 @@ public class ActivityRequestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Request created; response contains requestId"),
             @ApiResponse(responseCode = "400", description = "Invalid request data or player limit", content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class)))
+            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "409", description = "New requests cannot be created for this sport", content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     public ResponseEntity<Map<String, UUID>> createRequest(
             @RequestBody @Valid CreateActivityRequestDto dto,
@@ -332,6 +334,43 @@ public class ActivityRequestController {
                 .searchNearbyRequests(lat, lon, radius, sportId, startDate, endDate);
                 
         return ResponseEntity.ok(feed);
+    }
+
+    @GetMapping("/users/{userId}")
+    @Operation(
+            summary = "Get a user's activity requests",
+            description = "Returns requests organized by or involving the specified user, including inactive requests. " +
+                    "Omit statuses to include every request status; set forOrganizer to true to return only requests organized by this user."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page of requests, possibly empty"),
+            @ApiResponse(responseCode = "400", description = "Invalid user UUID, page number or request status",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<PagedModel<ActivityRequestInformationDto>> getUserRequestsById(
+            @Parameter(description = "UUID of the user whose requests are returned",
+                    example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @PathVariable("userId") UUID userId,
+
+            @Parameter(description = "Optional request statuses. Repeat this query parameter to select multiple statuses; omit it for all statuses.",
+                    example = "COMPLETED")
+            @RequestParam(value = "statuses", required = false) List<RequestStatus> statuses,
+
+            @Parameter(description = "Zero-based page number; each page contains up to 20 requests.", example = "0")
+            @RequestParam(value = "page", defaultValue = "0") Integer pageNumber,
+
+            @Parameter(description = "If true, return only requests organized by the specified user; if false, include requests they joined.",
+                    example = "false")
+            @RequestParam(value = "forOrganizer", defaultValue = "false") Boolean forOrganizer
+    ) {
+        Page<ActivityRequestInformationDto> result =
+                activityRequestService.getRequestsByUserId(
+                        userId,
+                        statuses == null ? null : new HashSet<>(statuses),
+                        pageNumber,
+                        forOrganizer
+                );
+        return ResponseEntity.ok(new PagedModel<>(result));
     }
 
     @GetMapping("/{id}")

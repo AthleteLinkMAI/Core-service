@@ -22,21 +22,31 @@ public class KafkaProducerService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueRoundResult(GameRoundResultDto event) {
-        enqueue(event.eventId(), event.requestId(), event);
+        enqueueRound(event.eventId(), event.requestId(), event);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueCloseRequest(CloseRequestDto event) {
-        enqueue(UUID.randomUUID(), event.requestId(), event);
+        enqueueClose(UUID.randomUUID(), event.requestId(), event);
     }
 
-    private void enqueue(UUID eventId, UUID requestId, Object event) {
+    private void enqueueRound(UUID eventId, UUID requestId, Object event) {
         String payload;
         try {
             payload = objectMapper.writeValueAsString(event);
         } catch (Exception ex) {
             throw new IllegalStateException("Could not serialize Game Service command", ex);
         }
-        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topics.gameCommands(), payload));
+        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topics.gameSubmitRounds(), payload));
+    }
+
+    private void enqueueClose(UUID eventId, UUID requestId, Object event) {
+        String payload;
+        try {
+            payload = objectMapper.writeValueAsString(event);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Could not serialize Game Service command", ex);
+        }
+        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topics.gameCloseRequests(), payload));
     }
 }
