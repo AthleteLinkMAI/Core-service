@@ -6,8 +6,8 @@ import java.util.UUID;
 public record CloseRequestResolvedDto(
         UUID requestId,
         String type,
-        Boolean successful,
-        String reason
+        Boolean isSuccessful,
+        String errorMessage
 ) {
     public static final String TYPE = "CLOSE_REQUEST_RESOLVED";
 }
