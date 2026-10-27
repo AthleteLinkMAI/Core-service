@@ -4,6 +4,9 @@ spring:
   mvc:
     servlet:
       path: /api/v1
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/core_db
     username: user
@@ -38,7 +41,8 @@ app:
   kafka:
     topics:
       user-changes: user.changes
-      game-commands: game.commands
+      game-submit-rounds: game.submit.rounds
+      game-close-requests: game.close.requests
       game-replies: game.replies
     outbox:
       poll-interval-ms: 1000
@@ -51,10 +55,19 @@ springdoc:
 server:
   port: 8081
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+
 logging:
   level:
     root: INFO
   file:
     name: /logs/athletelink-core-service.log
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  structured:
+    format:
+      file: ecs
+    json:
+      exclude: ecs

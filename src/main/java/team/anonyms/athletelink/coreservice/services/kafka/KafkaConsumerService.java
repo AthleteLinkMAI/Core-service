@@ -48,7 +48,13 @@ public class KafkaConsumerService {
         try {
             return objectMapper.readValue(payload, type);
         } catch (Exception ex) {
-            log.error("Invalid Kafka message for {}", type.getSimpleName(), ex);
+            log.atError()
+                    .setMessage("Invalid Kafka message")
+                    .setCause(ex)
+                    .addKeyValue("API endpoint", "N/A")
+                    .addKeyValue("source", "kafka.consumer")
+                    .addKeyValue("messageType", type.getSimpleName())
+                    .log();
             throw new IllegalArgumentException("Invalid Kafka message", ex);
         }
     }

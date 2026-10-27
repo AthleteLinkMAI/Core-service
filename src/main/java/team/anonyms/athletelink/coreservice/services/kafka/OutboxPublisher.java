@@ -18,7 +18,12 @@ public class OutboxPublisher {
                 // Publish in storage order; stop at the first failure.
             }
         } catch (Exception ex) {
-            log.warn("Game command publication will be retried", ex);
+            log.atWarn()
+                    .setMessage("Game command publication will be retried")
+                    .setCause(ex)
+                    .addKeyValue("API endpoint", "N/A")
+                    .addKeyValue("source", "outbox.publisher")
+                    .log();
         }
     }
 }

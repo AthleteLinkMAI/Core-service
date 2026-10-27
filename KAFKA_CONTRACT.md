@@ -29,7 +29,6 @@ Completion request (`POST /requests/{requestId}/complete` returns HTTP 202):
 {
   "type": "CLOSE_REQUESTED",
   "requestId": "22222222-2222-2222-2222-222222222222",
-  "attemptId": "66666666-6666-6666-6666-666666666666",
   "expectedRounds": 3
 }
 ```
@@ -40,12 +39,11 @@ Game verifies confirmed results for rounds `1..expectedRounds`, then publishes e
 {
   "type": "CLOSE_REQUEST_RESOLVED",
   "requestId": "22222222-2222-2222-2222-222222222222",
-  "attemptId": "66666666-6666-6666-6666-666666666666",
   "successful": true,
   "reason": null
 }
 ```
 
-For refusal, `successful` is `false` and `reason` explains the missing or rejected round. Core applies a reply only while the request is `CONFIRMATION` and `attemptId` matches. Success produces `COMPLETED`; refusal returns to `ACTIVE` and exposes `completionErrorMessage` in request details. Duplicate or stale replies have no effect. The client polls `GET /requests/{requestId}` for the final status. Result reads must go to Game; Core no longer serves `GET /requests/{requestId}/rounds`.
+For refusal, `successful` is `false` and `reason` explains the missing or rejected round. Core applies a reply while the request is `CONFIRMATION`. Success produces `COMPLETED`; refusal returns to `ACTIVE` and exposes `completionErrorMessage` in request details. A repeated reply has no effect once the request leaves `CONFIRMATION`. If a later completion check has started, a delayed reply from an earlier check may apply to it; this behavior is accepted by the current protocol. The client polls `GET /requests/{requestId}` for the final status. Result reads must go to Game; Core no longer serves `GET /requests/{requestId}/rounds`.
 
 This contract requires the Game consumer, result tables, unique constraints, scoring, and reply producer to be implemented there. Core alone cannot complete an end-to-end run.

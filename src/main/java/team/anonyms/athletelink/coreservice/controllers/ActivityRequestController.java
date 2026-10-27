@@ -6,14 +6,14 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Positive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestDetailsDto;
-import team.anonyms.athletelink.coreservice.dto.ActivityRequestFeedDto;
-import team.anonyms.athletelink.coreservice.dto.CreateActivityRequestDto;
-import team.anonyms.athletelink.coreservice.dto.UpdateActivityRequestDto;
+import team.anonyms.athletelink.coreservice.dto.*;
+import team.anonyms.athletelink.coreservice.enums.RequestStatus;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import team.anonyms.athletelink.coreservice.exceptions.GlobalExceptionHandler.ApiError;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.time.Instant;
@@ -51,14 +52,21 @@ public class ActivityRequestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Request created; response contains requestId"),
             @ApiResponse(responseCode = "400", description = "Invalid request data or player limit", content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class)))
+            @ApiResponse(responseCode = "404", description = "Sport not found", content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "409", description = "New requests cannot be created for this sport", content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     public ResponseEntity<Map<String, UUID>> createRequest(
             @RequestBody @Valid CreateActivityRequestDto dto,
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
-        logger.info("User {} is creating a new activity request: {}", userId, dto.title());
+        logger.atInfo()
+                .setMessage("User is creating an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests")
+                .addKeyValue("userId", userId)
+                .addKeyValue("sportId", dto.sportId())
+                .addKeyValue("title", dto.title())
+                .log();
 
         UUID createdRequestId = activityRequestService.createRequest(dto, userId);
 
@@ -83,7 +91,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
-        logger.info("User {} attempting to join request {}", userId, requestId);
+        logger.atInfo()
+                .setMessage("User is attempting to join an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/join")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.joinRequest(requestId, userId);
         return ResponseEntity.ok().build();
     }
@@ -105,7 +118,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
-        logger.info("User {} attempting to leave request {}", userId, requestId);
+        logger.atInfo()
+                .setMessage("User is attempting to leave an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/leave")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.leaveRequest(requestId, userId);
         return ResponseEntity.ok().build();
     }
@@ -127,7 +145,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
-        logger.info("User {} is attempting to cancel request {}", userId, requestId);
+        logger.atInfo()
+                .setMessage("User is attempting to cancel an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/cancel")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.cancelRequest(requestId, userId);
         return ResponseEntity.ok().build();
     }
@@ -150,7 +173,13 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID organizerId
     ) {
-        logger.info("Organizer {} is attempting to kick user {} from request {}", organizerId, targetUserId, requestId);
+        logger.atInfo()
+                .setMessage("Organizer is attempting to remove a participant from an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/kick/{targetUserId}")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("organizerId", organizerId)
+                .addKeyValue("targetUserId", targetUserId)
+                .log();
         activityRequestService.kickParticipant(requestId, targetUserId, organizerId);
         return ResponseEntity.ok().build();
     }
@@ -173,7 +202,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
-        logger.info("Organizer {} is updating request {}", userId, requestId);
+        logger.atInfo()
+                .setMessage("Organizer is updating an activity request")
+                .addKeyValue("API endpoint", "PUT /api/v1/requests/{id}")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         
         ActivityRequestDetailsDto updatedRequest = activityRequestService.updateRequest(requestId, userId, dto);
         
@@ -194,6 +228,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
+        logger.atInfo()
+                .setMessage("Organizer is closing registration for an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/registration/close")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.closeRegistration(requestId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -212,6 +252,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
+        logger.atInfo()
+                .setMessage("Organizer is opening registration for an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/registration/open")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.openRegistration(requestId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -230,6 +276,12 @@ public class ActivityRequestController {
             @Parameter(description = "Caller UUID. Core Service does not currently authenticate this header.", required = true)
             @RequestHeader("X-User-Id") UUID userId
     ) {
+        logger.atInfo()
+                .setMessage("Organizer is starting an activity request")
+                .addKeyValue("API endpoint", "POST /api/v1/requests/{id}/start")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("userId", userId)
+                .log();
         activityRequestService.startRequest(requestId, userId);
         return ResponseEntity.noContent().build();
     }
@@ -267,14 +319,58 @@ public class ActivityRequestController {
             @Parameter(description = "End of time window (ISO-8601)", example = "2026-09-12T22:00:00Z") 
             @RequestParam(value = "endDate", required = false) Instant endDate
     ) {
-        logger.info("Searching for requests near [{}, {}] within {} meters. Sport filter: {}. Date range: {} to {}", lat, lon, radius, sportId,
-                startDate, endDate
-        );
+        logger.atInfo()
+                .setMessage("User is searching for nearby activity requests")
+                .addKeyValue("API endpoint", "GET /api/v1/requests")
+                .addKeyValue("lat", lat)
+                .addKeyValue("lon", lon)
+                .addKeyValue("radius", radius)
+                .addKeyValue("sportId", sportId)
+                .addKeyValue("startDate", startDate)
+                .addKeyValue("endDate", endDate)
+                .log();
         
         List<ActivityRequestFeedDto> feed = activityRequestService
                 .searchNearbyRequests(lat, lon, radius, sportId, startDate, endDate);
                 
         return ResponseEntity.ok(feed);
+    }
+
+    @GetMapping("/users/{userId}")
+    @Operation(
+            summary = "Get a user's activity requests",
+            description = "Returns requests organized by or involving the specified user, including inactive requests. " +
+                    "Omit statuses to include every request status; set forOrganizer to true to return only requests organized by this user."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page of requests, possibly empty"),
+            @ApiResponse(responseCode = "400", description = "Invalid user UUID, page number or request status",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<PagedModel<ActivityRequestInformationDto>> getUserRequestsById(
+            @Parameter(description = "UUID of the user whose requests are returned",
+                    example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+            @PathVariable("userId") UUID userId,
+
+            @Parameter(description = "Optional request statuses. Repeat this query parameter to select multiple statuses; omit it for all statuses.",
+                    example = "COMPLETED")
+            @RequestParam(value = "statuses", required = false) List<RequestStatus> statuses,
+
+            @Parameter(description = "Zero-based page number; each page contains up to 20 requests.", example = "0")
+            @RequestParam(value = "page", defaultValue = "0") Integer pageNumber,
+
+            @Parameter(description = "If true, return only requests organized by the specified user; if false, include requests they joined.",
+                    example = "false")
+            @RequestParam(value = "forOrganizer", defaultValue = "false") Boolean forOrganizer
+    ) {
+        Page<ActivityRequestInformationDto> result =
+                activityRequestService.getRequestsByUserId(
+                        userId,
+                        statuses == null ? null : new HashSet<>(statuses),
+                        pageNumber,
+                        forOrganizer
+                );
+        return ResponseEntity.ok(new PagedModel<>(result));
     }
 
     @GetMapping("/{id}")
@@ -288,7 +384,11 @@ public class ActivityRequestController {
             @Parameter(description = "Request UUID", example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable("id") UUID requestId
     ) {
-        logger.info("Fetching details for request {}", requestId);
+        logger.atInfo()
+                .setMessage("User is fetching activity request details")
+                .addKeyValue("API endpoint", "GET /api/v1/requests/{id}")
+                .addKeyValue("requestId", requestId)
+                .log();
         ActivityRequestDetailsDto details = activityRequestService.getRequestDetails(requestId);
         return ResponseEntity.ok(details);
     }

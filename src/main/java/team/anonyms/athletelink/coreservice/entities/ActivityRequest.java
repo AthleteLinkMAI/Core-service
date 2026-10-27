@@ -52,9 +52,6 @@ public class ActivityRequest {
     @NotNull(message = "Number of rounds is required")
     private Integer numberOfRounds;
 
-    @Column(name = "completion_attempt_id")
-    private UUID completionAttemptId;
-
     @Column(name = "completion_error_message", length = 255)
     private String completionErrorMessage;
 

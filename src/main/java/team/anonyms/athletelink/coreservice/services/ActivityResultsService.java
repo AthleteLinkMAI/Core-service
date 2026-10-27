@@ -94,7 +94,7 @@ public class ActivityResultsService {
         return new RoundSubmissionAcceptedDto(eventId, requestId, roundNumber);
     }
 
-    /** Starts an asynchronous closure attempt. Repeated calls while pending return the same attempt. */
+    /** Starts an asynchronous closure check. Repeated calls while pending do not queue another command. */
     @Transactional
     public CompletionAcceptedDto completeRequest(UUID requestId, UUID organizerId) {
         ActivityRequest request = activityRequestRepository.findByIdForUpdate(requestId)
@@ -102,26 +102,23 @@ public class ActivityResultsService {
         requireOrganizer(request, organizerId);
 
         if (request.getStatus() == RequestStatus.CONFIRMATION) {
-            return new CompletionAcceptedDto(requestId, request.getCompletionAttemptId(), RequestStatus.CONFIRMATION);
+            return new CompletionAcceptedDto(requestId, RequestStatus.CONFIRMATION);
         }
         if (request.getStatus() != RequestStatus.ACTIVE) {
             throw new IllegalStateException("Only an active request can be completed.");
         }
 
-        UUID attemptId = UUID.randomUUID();
-        request.setCompletionAttemptId(attemptId);
         request.setCompletionErrorMessage(null);
         request.setStatus(RequestStatus.CONFIRMATION);
         kafkaProducerService.enqueueCloseRequest(
-                new CloseRequestDto(requestId, attemptId, request.getNumberOfRounds()));
-        return new CompletionAcceptedDto(requestId, attemptId, RequestStatus.CONFIRMATION);
+                new CloseRequestDto(requestId, request.getNumberOfRounds()));
+        return new CompletionAcceptedDto(requestId, RequestStatus.CONFIRMATION);
     }
 
-    /** Applies only the answer for the currently pending attempt. Duplicate and stale replies are harmless. */
+    /** Applies a reply only while the request is awaiting confirmation. */
     @Transactional
     public void resolveCompletion(CloseRequestResolvedDto reply) {
-        if (reply == null || reply.requestId() == null || reply.attemptId() == null
-                || reply.successful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
+        if (reply == null || reply.requestId() == null || reply.isSuccessful() == null || !CloseRequestResolvedDto.TYPE.equals(reply.type())) {
             throw new IllegalArgumentException("Malformed request completion reply.");
         }
         var request = activityRequestRepository.findByIdForUpdate(reply.requestId());
@@ -129,19 +126,18 @@ public class ActivityResultsService {
             return; // The request may have been removed after an account deletion.
         }
         ActivityRequest activityRequest = request.get();
-        if (activityRequest.getStatus() != RequestStatus.CONFIRMATION
-                || !reply.attemptId().equals(activityRequest.getCompletionAttemptId())) {
+        if (activityRequest.getStatus() != RequestStatus.CONFIRMATION) {
             return;
         }
 
-        if (reply.successful()) {
+        if (reply.isSuccessful()) {
             activityRequest.setStatus(RequestStatus.COMPLETED);
             activityRequest.setCompletionErrorMessage(null);
         } else {
             activityRequest.setStatus(RequestStatus.ACTIVE);
-            String message = reply.reason() == null || reply.reason().isBlank()
+            String message = reply.errorMessage() == null || reply.errorMessage().isBlank()
                     ? "Game Service could not confirm all round results."
-                    : reply.reason();
+                    : reply.errorMessage();
             activityRequest.setCompletionErrorMessage(message.substring(0, Math.min(message.length(), 255)));
         }
     }
