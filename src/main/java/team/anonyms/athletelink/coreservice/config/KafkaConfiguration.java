@@ -30,4 +30,9 @@ public class KafkaConfiguration {
     public NewTopic gameRepliesTopic(KafkaTopicProperties topics) {
         return TopicBuilder.name(topics.gameReplies()).partitions(3).replicas(1).build();
     }
+
+    @Bean
+    public NewTopic requestNotificationsTopic(KafkaTopicProperties topics) {
+        return TopicBuilder.name(topics.requestNotifications()).partitions(3).replicas(1).build();
+    }
 }

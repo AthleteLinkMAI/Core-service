@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import team.anonyms.athletelink.coreservice.config.KafkaTopicProperties;
+import team.anonyms.athletelink.coreservice.dto.kafka.ActivityRequestNotificationDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.GameRoundResultDto;
 import team.anonyms.athletelink.coreservice.entities.OutboxEvent;
@@ -15,6 +16,7 @@ import team.anonyms.athletelink.coreservice.repositories.OutboxEventRepository;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -77,6 +79,24 @@ class KafkaOutboxTests {
         assertEquals("game.submit-rounds", saved.getValue().getTopic());
         assertEquals("{\"type\":\"ROUND_RESULT_SUBMITTED\"}", saved.getValue().getPayload());
         assertNull(saved.getValue().getPublishedAt());
+    }
+
+    @Test
+    void notificationUsesItsEventIdAndSeparateTopic() throws Exception {
+        var event = new ActivityRequestNotificationDto(
+                ActivityRequestNotificationDto.ONE_HOUR_OVERDUE,
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "Football", Instant.parse("2026-10-26T10:00:00Z"));
+        when(topics.requestNotifications()).thenReturn("request.notifications");
+        when(objectMapper.writeValueAsString(event)).thenReturn("{\"type\":\"REQUEST_START_OVERDUE_1H\"}");
+
+        producer.enqueueRequestNotification(event);
+
+        var saved = org.mockito.ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(repository).save(saved.capture());
+        assertEquals(event.eventId(), saved.getValue().getId());
+        assertEquals(event.requestId(), saved.getValue().getAggregateId());
+        assertEquals("request.notifications", saved.getValue().getTopic());
     }
 
     @Test

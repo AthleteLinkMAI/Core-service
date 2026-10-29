@@ -54,6 +54,9 @@ class ActivityRequestServiceTests {
     @Mock
     private ActivityRequestMapper requestMapper;
 
+    @Mock
+    private team.anonyms.athletelink.coreservice.services.kafka.KafkaProducerService kafkaProducerService;
+
     @InjectMocks
     private ActivityRequestService activityRequestService;
 
@@ -630,6 +633,8 @@ class ActivityRequestServiceTests {
     @Test
     void updateRequestChangesFieldsAndCountsOnlyAcceptedPlayers() {
         ActivityRequest request = plannedRequest();
+        request.setFirstReminderEnqueuedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        request.setSecondReminderEnqueuedAt(Instant.parse("2026-01-02T00:00:00Z"));
         RequestParticipant accepted = participant(organizerId, ParticipantRole.ORGANIZER, ParticipantStatus.ACCEPTED);
         RequestParticipant left = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.LEFT);
         UpdateActivityRequestDto dto = updateDto(3);
@@ -648,6 +653,9 @@ class ActivityRequestServiceTests {
         assertEquals(dto.eventDate(), request.getEventDate());
         assertEquals(dto.numberOfRounds(), request.getNumberOfRounds());
         assertEquals(dto.maxPlayers(), request.getMaxPlayers());
+        assertNull(request.getFirstReminderEnqueuedAt());
+        assertNull(request.getSecondReminderEnqueuedAt());
+        Mockito.verify(kafkaProducerService).cancelUnpublishedRequestNotifications(requestId);
         Mockito.verify(activityRequestRepository).save(request);
         Mockito.verify(requestMapper).toDetailsDto(request, 1, List.of(participantDto(accepted), participantDto(left)));
     }
@@ -785,6 +793,7 @@ class ActivityRequestServiceTests {
         activityRequestService.startRequest(requestId, organizerId);
         assertEquals(RequestStatus.ACTIVE, request.getStatus());
         assertFalse(request.getRegistrationOpen());
+        Mockito.verify(kafkaProducerService).cancelUnpublishedRequestNotifications(requestId);
     }
 
     @Test

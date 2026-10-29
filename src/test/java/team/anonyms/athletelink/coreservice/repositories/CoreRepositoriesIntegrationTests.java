@@ -2,6 +2,7 @@ package team.anonyms.athletelink.coreservice.repositories;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -25,6 +26,11 @@ import team.anonyms.athletelink.coreservice.entities.Sport;
 import team.anonyms.athletelink.coreservice.enums.ParticipantRole;
 import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import team.anonyms.athletelink.coreservice.enums.RequestStatus;
+import team.anonyms.athletelink.coreservice.config.KafkaTopicProperties;
+import team.anonyms.athletelink.coreservice.dto.kafka.ActivityRequestNotificationDto;
+import team.anonyms.athletelink.coreservice.scheduling.ActivityRequestExpirationService;
+import team.anonyms.athletelink.coreservice.services.kafka.KafkaProducerService;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -198,6 +204,103 @@ class CoreRepositoriesIntegrationTests {
                 .orElseThrow().getId());
         markPublished(newestId);
         assertTrue(outbox.findFirstByPublishedAtIsNullOrderByCreatedAtAscIdAsc().isEmpty());
+    }
+
+    @Test
+    void dueQuerySelectsOnlyPlannedRequestsWithPendingMilestones() {
+        Sport sport = sports.findAll().getFirst();
+        Instant now = future;
+        ActivityRequest first = request(sport, 37, 55, now.minus(Duration.ofHours(1)), RequestStatus.PLANNED, true);
+        ActivityRequest second = request(sport, 37, 55, now.minus(Duration.ofDays(1)), RequestStatus.PLANNED, true);
+        second.setFirstReminderEnqueuedAt(now.minus(Duration.ofHours(23)));
+        ActivityRequest expired = request(sport, 37, 55, now.minus(Duration.ofDays(2)), RequestStatus.PLANNED, true);
+        ActivityRequest completed = request(sport, 37, 55, now.minus(Duration.ofDays(3)), RequestStatus.ACTIVE, false);
+        ActivityRequest early = request(sport, 37, 55, now.minus(Duration.ofHours(1)).plusSeconds(1), RequestStatus.PLANNED, true);
+        requests.flush();
+        entityManager.clear();
+
+        List<UUID> due = requests.findDueRequestIds(RequestStatus.PLANNED,
+                now.minus(Duration.ofHours(1)), now.minus(Duration.ofDays(1)),
+                now.minus(Duration.ofDays(2)), PageRequest.of(0, 100));
+
+        assertEquals(List.of(expired.getId(), second.getId(), first.getId()), due);
+        assertFalse(due.contains(completed.getId()));
+        assertFalse(due.contains(early.getId()));
+    }
+
+    @Test
+    void cancellingPendingNotificationsLeavesPublishedEventsAlone() {
+        UUID requestId = UUID.randomUUID();
+        OutboxEvent pending = outbox.saveAndFlush(new OutboxEvent(UUID.randomUUID(), requestId,
+                "request.notifications", "{}"));
+        OutboxEvent published = outbox.saveAndFlush(new OutboxEvent(UUID.randomUUID(), requestId,
+                "request.notifications", "{}"));
+        published.markPublished();
+        outbox.saveAndFlush(published);
+        entityManager.clear();
+
+        outbox.deleteUnpublishedForRequestAndTopic(requestId, "request.notifications");
+        outbox.flush();
+        entityManager.clear();
+
+        assertFalse(outbox.existsById(pending.getId()));
+        assertTrue(outbox.existsById(published.getId()));
+    }
+
+    @Test
+    void expiryDeletesParticipantsAndPreservesFinalNotificationInOutbox() throws Exception {
+        Sport sport = sports.findAll().getFirst();
+        Instant now = future;
+        ActivityRequest expired = request(sport, 37, 55, now.minus(Duration.ofDays(2)), RequestStatus.PLANNED, true);
+        RequestParticipant player = participant(expired, UUID.randomUUID(), ParticipantStatus.ACCEPTED);
+        requests.flush();
+        participants.flush();
+        entityManager.clear();
+
+        ObjectMapper mapper = new ObjectMapper();
+        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes", "game.submit.rounds",
+                "game.close.requests", "game.replies", "request.notifications");
+        var producer = new KafkaProducerService(outbox, topics, mapper);
+        var expiration = new ActivityRequestExpirationService(requests, producer);
+        expiration.processDueRequest(expired.getId(), now);
+        requests.flush();
+        outbox.flush();
+        entityManager.clear();
+
+        assertFalse(requests.existsById(expired.getId()));
+        assertFalse(participants.existsById(player.getId()));
+        OutboxEvent event = outbox.findAll().stream()
+                .filter(item -> expired.getId().equals(item.getAggregateId()))
+                .findFirst().orElseThrow();
+        assertEquals("request.notifications", event.getTopic());
+        assertEquals(ActivityRequestNotificationDto.EXPIRED,
+                mapper.readValue(event.getPayload(), ActivityRequestNotificationDto.class).type());
+    }
+
+    @Test
+    void firstReminderMarkerPreventsDuplicateOutboxEventsAfterReload() {
+        Sport sport = sports.findAll().getFirst();
+        Instant now = future;
+        ActivityRequest due = request(sport, 37, 55, now.minus(Duration.ofHours(1)), RequestStatus.PLANNED, true);
+        requests.flush();
+        entityManager.clear();
+
+        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes", "game.submit.rounds",
+                "game.close.requests", "game.replies", "request.notifications");
+        var producer = new KafkaProducerService(outbox, topics, new ObjectMapper());
+        var expiration = new ActivityRequestExpirationService(requests, producer);
+        expiration.processDueRequest(due.getId(), now);
+        requests.flush();
+        outbox.flush();
+        entityManager.clear();
+        expiration.processDueRequest(due.getId(), now.plusSeconds(1));
+        requests.flush();
+        outbox.flush();
+        entityManager.clear();
+
+        assertEquals(now, requests.findById(due.getId()).orElseThrow().getFirstReminderEnqueuedAt());
+        assertEquals(1, outbox.findAll().stream()
+                .filter(item -> due.getId().equals(item.getAggregateId())).count());
     }
 
     private ActivityRequest request(Sport sport, double longitude, double latitude, Instant date,

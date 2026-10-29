@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.coreservice.config.KafkaTopicProperties;
+import team.anonyms.athletelink.coreservice.dto.kafka.ActivityRequestNotificationDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.GameRoundResultDto;
 import team.anonyms.athletelink.coreservice.entities.OutboxEvent;
@@ -30,23 +31,31 @@ public class KafkaProducerService {
         enqueueClose(UUID.randomUUID(), event.requestId(), event);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void enqueueRequestNotification(ActivityRequestNotificationDto event) {
+        enqueue(event.eventId(), event.requestId(), topics.requestNotifications(), event, "request notification");
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cancelUnpublishedRequestNotifications(UUID requestId) {
+        outboxEventRepository.deleteUnpublishedForRequestAndTopic(requestId, topics.requestNotifications());
+    }
+
     private void enqueueRound(UUID eventId, UUID requestId, Object event) {
-        String payload;
-        try {
-            payload = objectMapper.writeValueAsString(event);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Could not serialize Game Service command", ex);
-        }
-        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topics.gameSubmitRounds(), payload));
+        enqueue(eventId, requestId, topics.gameSubmitRounds(), event, "Game Service command");
     }
 
     private void enqueueClose(UUID eventId, UUID requestId, Object event) {
+        enqueue(eventId, requestId, topics.gameCloseRequests(), event, "Game Service command");
+    }
+
+    private void enqueue(UUID eventId, UUID requestId, String topic, Object event, String kind) {
         String payload;
         try {
             payload = objectMapper.writeValueAsString(event);
         } catch (Exception ex) {
-            throw new IllegalStateException("Could not serialize Game Service command", ex);
+            throw new IllegalStateException("Could not serialize " + kind, ex);
         }
-        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topics.gameCloseRequests(), payload));
+        outboxEventRepository.save(new OutboxEvent(eventId, requestId, topic, payload));
     }
 }

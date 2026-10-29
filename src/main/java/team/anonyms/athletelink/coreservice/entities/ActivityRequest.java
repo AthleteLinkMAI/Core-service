@@ -74,4 +74,10 @@ public class ActivityRequest {
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
+
+    @Column(name = "first_reminder_enqueued_at")
+    private Instant firstReminderEnqueuedAt;
+
+    @Column(name = "second_reminder_enqueued_at")
+    private Instant secondReminderEnqueuedAt;
 }

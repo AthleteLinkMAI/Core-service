@@ -7,6 +7,7 @@ public record KafkaTopicProperties(
         String userChanges,
         String gameSubmitRounds,
         String gameCloseRequests,
-        String gameReplies
+        String gameReplies,
+        String requestNotifications
 ) {
 }

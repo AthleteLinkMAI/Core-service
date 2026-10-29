@@ -21,6 +21,7 @@ import team.anonyms.athletelink.coreservice.mappers.ActivityRequestMapper;
 import team.anonyms.athletelink.coreservice.repositories.ActivityRequestRepository;
 import team.anonyms.athletelink.coreservice.repositories.RequestParticipantRepository;
 import team.anonyms.athletelink.coreservice.repositories.SportRepository;
+import team.anonyms.athletelink.coreservice.services.kafka.KafkaProducerService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +39,7 @@ public class ActivityRequestService {
     private final ActivityRequestRepository activityRequestRepository;
     private final RequestParticipantRepository requestParticipantRepository;
     private final SportRepository sportRepository;
+    private final KafkaProducerService kafkaProducerService;
 
     private final ActivityRequestMapper requestMapper;
     private static final int REQUESTS_PAGE_SIZE = 20;
@@ -48,12 +50,14 @@ public class ActivityRequestService {
         ActivityRequestRepository activityRequestRepository, 
         RequestParticipantRepository requestParticipantRepository, 
         SportRepository sportRepository,
-        ActivityRequestMapper requestMapper
+        ActivityRequestMapper requestMapper,
+        KafkaProducerService kafkaProducerService
     ) {
         this.activityRequestRepository = activityRequestRepository;
         this.requestParticipantRepository = requestParticipantRepository;
         this.sportRepository = sportRepository;
         this.requestMapper = requestMapper;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     /**
@@ -243,6 +247,7 @@ public class ActivityRequestService {
         }
 
         request.setStatus(RequestStatus.CANCELLED);
+        kafkaProducerService.cancelUnpublishedRequestNotifications(requestId);
         activityRequestRepository.save(request);
     }
 
@@ -327,6 +332,11 @@ public class ActivityRequestService {
 
         request.setTitle(dto.title());
         request.setDescription(dto.description());
+        if (!Objects.equals(request.getEventDate(), dto.eventDate())) {
+            kafkaProducerService.cancelUnpublishedRequestNotifications(requestId);
+            request.setFirstReminderEnqueuedAt(null);
+            request.setSecondReminderEnqueuedAt(null);
+        }
         request.setEventDate(dto.eventDate());
         request.setNumberOfRounds(dto.numberOfRounds());
         request.setMaxPlayers(dto.maxPlayers());
@@ -446,6 +456,7 @@ public class ActivityRequestService {
 
         request.setRegistrationOpen(false);
         request.setStatus(RequestStatus.ACTIVE);
+        kafkaProducerService.cancelUnpublishedRequestNotifications(requestId);
     }
 
     /**

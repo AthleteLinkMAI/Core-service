@@ -53,9 +53,9 @@ deploy-job:
   extends: .deploy_template
   script:
     - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
-      cd /root/projects/athlete-link &&
-      docker stop  athlete-link-backend-core-service-1 || true &&
-      docker rm    athlete-link-backend-core-service-1 || true &&
+      cd /root/projects/athletelink &&
+      docker stop  athletelink-backend-core-service-1 || true &&
+      docker rm    athletelink-backend-core-service-1 || true &&
       docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest &&
       docker compose up -d
       "

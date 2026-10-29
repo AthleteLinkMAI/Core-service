@@ -2,12 +2,14 @@ package team.anonyms.athletelink.coreservice.services.kafka;
 
 import org.junit.jupiter.api.Test;
 import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestDto;
+import team.anonyms.athletelink.coreservice.dto.kafka.ActivityRequestNotificationDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.CloseRequestResolvedDto;
 import team.anonyms.athletelink.coreservice.dto.kafka.GameRoundResultDto;
 import team.anonyms.athletelink.coreservice.enums.RoundOutcome;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -46,5 +48,18 @@ class KafkaContractJsonTests {
         assertEquals(Set.of("type", "requestId", "expectedRounds"),
                 mapper.readValue(json, Map.class).keySet());
         assertEquals(command, mapper.readValue(json, CloseRequestDto.class));
+    }
+
+    @Test
+    void requestNotificationIsPlainJsonWithAllRoutingFields() throws Exception {
+        var event = new ActivityRequestNotificationDto(
+                ActivityRequestNotificationDto.EXPIRED,
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "Football", Instant.parse("2026-10-26T10:00:00Z"));
+        String json = mapper.writeValueAsString(event);
+
+        assertEquals(Set.of("type", "eventId", "requestId", "organizerId", "title", "eventDate"),
+                mapper.readValue(json, Map.class).keySet());
+        assertEquals(event, mapper.readValue(json, ActivityRequestNotificationDto.class));
     }
 }

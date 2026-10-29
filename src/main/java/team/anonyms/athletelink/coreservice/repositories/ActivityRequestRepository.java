@@ -3,8 +3,8 @@ package team.anonyms.athletelink.coreservice.repositories;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
@@ -126,4 +126,21 @@ public interface ActivityRequestRepository extends JpaRepository<ActivityRequest
     );
 
     void deleteAllByOrganizerId(UUID organizerId);
+
+    @Query("""
+        SELECT ar.id FROM ActivityRequest ar
+        WHERE ar.status = :planned
+          AND ar.eventDate <= :oneHourAgo
+          AND (ar.eventDate <= :twoDaysAgo
+               OR ar.firstReminderEnqueuedAt IS NULL
+               OR (ar.eventDate <= :oneDayAgo AND ar.secondReminderEnqueuedAt IS NULL))
+        ORDER BY ar.eventDate, ar.id
+        """)
+    List<UUID> findDueRequestIds(
+            @Param("planned") RequestStatus planned,
+            @Param("oneHourAgo") Instant oneHourAgo,
+            @Param("oneDayAgo") Instant oneDayAgo,
+            @Param("twoDaysAgo") Instant twoDaysAgo,
+            Pageable pageable
+    );
 }

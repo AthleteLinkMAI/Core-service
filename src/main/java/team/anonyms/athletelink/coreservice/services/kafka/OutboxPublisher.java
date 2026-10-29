@@ -19,7 +19,7 @@ public class OutboxPublisher {
             }
         } catch (Exception ex) {
             log.atWarn()
-                    .setMessage("Game command publication will be retried")
+                    .setMessage("Outbox event publication will be retried")
                     .setCause(ex)
                     .addKeyValue("API endpoint", "N/A")
                     .addKeyValue("source", "outbox.publisher")

@@ -12,6 +12,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import team.anonyms.athletelink.coreservice.enums.ParticipantStatus;
 import team.anonyms.athletelink.coreservice.enums.RequestStatus;
 import team.anonyms.athletelink.coreservice.mappers.ActivityRequestMapperImpl;
 import team.anonyms.athletelink.coreservice.services.ActivityRequestService;
+import team.anonyms.athletelink.coreservice.services.kafka.KafkaProducerService;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -63,6 +65,7 @@ class JoinRequestConcurrencyIntegrationTests {
     @Autowired RequestParticipantRepository participants;
     @Autowired SportRepository sports;
     @Autowired ActivityRequestService service;
+    @MockitoBean KafkaProducerService kafkaProducerService;
     @Autowired PlatformTransactionManager transactionManager;
 
     @Test
