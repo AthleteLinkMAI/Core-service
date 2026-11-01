@@ -22,11 +22,6 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public NewTopic gameJoinRequestsTopic(KafkaTopicProperties topics) {
-        return TopicBuilder.name(topics.gameJoinRequests()).partitions(3).replicas(1).build();
-    }
-
-    @Bean
     public NewTopic gameRepliesTopic(KafkaTopicProperties topics) {
         return TopicBuilder.name(topics.gameReplies()).partitions(3).replicas(1).build();
     }

@@ -45,6 +45,4 @@ public class RequestParticipant {
     @Column(name = "joined_at")
     private Instant joinedAt;
 
-    @Column(name = "join_attempt_id")
-    private UUID joinAttemptId;
 }

@@ -258,7 +258,7 @@ class RequestRepositoriesIntegrationTests {
         entityManager.clear();
 
         ObjectMapper mapper = new ObjectMapper();
-        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes", "game.join.requests",
+        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes",
                 "activity.requests.changes", "game.replies", "request.notifications");
         var producer = new KafkaProducerService(outbox, topics, mapper);
         var expiration = new ActivityRequestExpirationService(requests, producer);
@@ -285,7 +285,7 @@ class RequestRepositoriesIntegrationTests {
         requests.flush();
         entityManager.clear();
 
-        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes", "game.join.requests",
+        KafkaTopicProperties topics = new KafkaTopicProperties("user.changes",
                 "activity.requests.changes", "game.replies", "request.notifications");
         var producer = new KafkaProducerService(outbox, topics, new ObjectMapper());
         var expiration = new ActivityRequestExpirationService(requests, producer);
@@ -325,7 +325,6 @@ class RequestRepositoriesIntegrationTests {
                 .userId(userId)
                 .role(ParticipantRole.PLAYER)
                 .status(status)
-                .joinAttemptId(status == ParticipantStatus.PENDING ? UUID.randomUUID() : null)
                 .build());
     }
 

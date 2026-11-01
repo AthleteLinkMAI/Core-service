@@ -9,7 +9,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import team.anonyms.athletelink.requestservice.config.KafkaTopicProperties;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestNotificationDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestStartedDto;
-import team.anonyms.athletelink.requestservice.dto.kafka.NewParticipantDto;
 import team.anonyms.athletelink.requestservice.entities.OutboxEvent;
 import team.anonyms.athletelink.requestservice.enums.ParticipantRole;
 import team.anonyms.athletelink.requestservice.repositories.OutboxEventRepository;
@@ -41,26 +40,6 @@ class KafkaOutboxTests {
     @Mock ObjectMapper objectMapper;
     @Mock KafkaTemplate<UUID, String> kafkaTemplate;
     @InjectMocks KafkaProducerService producer;
-
-    @Test
-    void joinRequestIsStoredWithTheRequestAsKafkaKey() throws Exception {
-        UUID requestId = UUID.randomUUID();
-        NewParticipantDto command = new NewParticipantDto(UUID.randomUUID(), requestId,
-                UUID.randomUUID(), UUID.randomUUID());
-        when(topics.gameJoinRequests()).thenReturn("game.join.requests");
-        when(objectMapper.writeValueAsString(command)).thenReturn("{\"type\":\"JOIN_REQUESTED\"}");
-
-        producer.enqueueJoinRequest(command);
-
-        var event = org.mockito.ArgumentCaptor.forClass(OutboxEvent.class);
-        verify(repository).save(event.capture());
-        assertEquals(command.eventId(), event.getValue().getId());
-        assertEquals(requestId, event.getValue().getAggregateId());
-        assertEquals("game.join.requests", event.getValue().getTopic());
-        assertEquals("{\"type\":\"JOIN_REQUESTED\"}", event.getValue().getPayload());
-        assertNotNull(event.getValue().getCreatedAt());
-        assertNull(event.getValue().getPublishedAt());
-    }
 
     @Test
     void startSnapshotKeepsItsEventIdAndSerializedPayload() throws Exception {
@@ -102,21 +81,6 @@ class KafkaOutboxTests {
     }
 
     @Test
-    void serializationFailureDoesNotCreateOutboxEvent() throws Exception {
-        NewParticipantDto command = new NewParticipantDto(UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), UUID.randomUUID());
-        RuntimeException cause = new IllegalArgumentException("Cannot serialize");
-        when(objectMapper.writeValueAsString(command)).thenThrow(cause);
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> producer.enqueueJoinRequest(command));
-
-        assertEquals("Could not serialize join request", exception.getMessage());
-        assertSame(cause, exception.getCause());
-        verifyNoInteractions(repository);
-    }
-
-    @Test
     void emptyOutboxDoesNotSendAnything() {
         OutboxDeliveryService delivery = new OutboxDeliveryService(repository, kafkaTemplate);
 
@@ -128,7 +92,7 @@ class KafkaOutboxTests {
 
     @Test
     void failedKafkaSendLeavesEventPendingForRetry() {
-        OutboxEvent event = new OutboxEvent(UUID.randomUUID(), UUID.randomUUID(), "game.join.requests", "{}");
+        OutboxEvent event = new OutboxEvent(UUID.randomUUID(), UUID.randomUUID(), "activity.requests.changes", "{}");
         when(repository.findFirstByPublishedAtIsNullOrderByCreatedAtAscIdAsc())
                 .thenReturn(Optional.of(event));
         when(kafkaTemplate.send(event.getTopic(), event.getAggregateId(), event.getPayload()))

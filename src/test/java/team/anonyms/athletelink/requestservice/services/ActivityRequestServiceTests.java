@@ -21,10 +21,9 @@ import team.anonyms.athletelink.requestservice.dto.CreateActivityRequestDto;
 import team.anonyms.athletelink.requestservice.dto.ActivityRequestDetailsDto;
 import team.anonyms.athletelink.requestservice.dto.ActivityRequestFeedDto;
 import team.anonyms.athletelink.requestservice.dto.ParticipantDto;
+import team.anonyms.athletelink.requestservice.dto.PendingJoinRequestDto;
 import team.anonyms.athletelink.requestservice.dto.UpdateActivityRequestDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestStartedDto;
-import team.anonyms.athletelink.requestservice.dto.kafka.JoinDecisionDto;
-import team.anonyms.athletelink.requestservice.dto.kafka.NewParticipantDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.RequestStatusChangedDto;
 import team.anonyms.athletelink.requestservice.entities.ActivityRequest;
 import team.anonyms.athletelink.requestservice.entities.RequestParticipant;
@@ -301,12 +300,8 @@ class ActivityRequestServiceTests {
         assertEquals(userId, savedParticipant.getUserId());
         assertEquals(requestId, savedParticipant.getActivityRequest().getId());
         assertEquals(ParticipantStatus.PENDING, savedParticipant.getStatus());
-        assertNotNull(savedParticipant.getJoinAttemptId());
         assertEquals(ParticipantRole.PLAYER, savedParticipant.getRole());
-        ArgumentCaptor<NewParticipantDto> event = ArgumentCaptor.forClass(NewParticipantDto.class);
-        Mockito.verify(kafkaProducerService).enqueueJoinRequest(event.capture());
-        assertEquals(savedParticipant.getJoinAttemptId(), event.getValue().eventId());
-        assertEquals(organizerId, event.getValue().organizerId());
+        Mockito.verifyNoInteractions(kafkaProducerService);
     }
 
     @Test
@@ -429,51 +424,77 @@ class ActivityRequestServiceTests {
     }
 
     @Test
-    void approvedJoinDecisionAcceptsOnlyItsPendingAttempt() {
-        UUID attemptId = UUID.randomUUID();
+    void organizerApprovalAcceptsPendingParticipant() {
         RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
-        pending.setJoinAttemptId(attemptId);
         pending.setJoinedAt(null);
         foundForUpdate(plannedRequest());
-        Mockito.when(requestParticipantRepository.findByActivityRequestIdAndUserId(requestId, userId))
+        Mockito.when(requestParticipantRepository.findById(pending.getId()))
                 .thenReturn(Optional.of(pending));
 
-        activityRequestService.resolveJoinDecision(new JoinDecisionDto(
-                JoinDecisionDto.TYPE, attemptId, requestId, userId, true));
+        activityRequestService.decideJoinRequest(requestId, pending.getId(), organizerId, true);
 
         assertEquals(ParticipantStatus.ACCEPTED, pending.getStatus());
-        assertNull(pending.getJoinAttemptId());
         assertNotNull(pending.getJoinedAt());
+        Mockito.verify(requestParticipantRepository, Mockito.never()).delete(any());
+        Mockito.verifyNoInteractions(kafkaProducerService);
+    }
+
+    @Test
+    void organizerRejectionRemovesPendingParticipant() {
+        RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
+        foundForUpdate(plannedRequest());
+        Mockito.when(requestParticipantRepository.findById(pending.getId()))
+                .thenReturn(Optional.of(pending));
+
+        activityRequestService.decideJoinRequest(requestId, pending.getId(), organizerId, false);
+
+        Mockito.verify(requestParticipantRepository).delete(pending);
+        Mockito.verifyNoInteractions(kafkaProducerService);
+    }
+
+    @Test
+    void staleParticipantIdCannotAcceptNewApplication() {
+        RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
+        foundForUpdate(plannedRequest());
+        UUID withdrawnParticipantId = UUID.randomUUID();
+        Mockito.when(requestParticipantRepository.findById(withdrawnParticipantId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> activityRequestService.decideJoinRequest(
+                requestId, withdrawnParticipantId, organizerId, true));
+
+        assertEquals(ParticipantStatus.PENDING, pending.getStatus());
         Mockito.verify(requestParticipantRepository, Mockito.never()).delete(any());
     }
 
     @Test
-    void rejectedJoinDecisionRemovesPendingAttempt() {
-        UUID attemptId = UUID.randomUUID();
+    void onlyOrganizerCanSeePendingApplications() {
         RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
-        pending.setJoinAttemptId(attemptId);
-        foundForUpdate(plannedRequest());
-        Mockito.when(requestParticipantRepository.findByActivityRequestIdAndUserId(requestId, userId))
-                .thenReturn(Optional.of(pending));
+        Mockito.when(activityRequestRepository.findById(requestId)).thenReturn(Optional.of(plannedRequest()));
+        Mockito.when(requestParticipantRepository.findAllByActivityRequestIdAndStatus(requestId, ParticipantStatus.PENDING))
+                .thenReturn(List.of(pending));
 
-        activityRequestService.resolveJoinDecision(new JoinDecisionDto(
-                JoinDecisionDto.TYPE, attemptId, requestId, userId, false));
-
-        Mockito.verify(requestParticipantRepository).delete(pending);
+        assertEquals(List.of(new PendingJoinRequestDto(pending.getId(), requestId, userId)),
+                activityRequestService.getPendingJoinRequests(requestId, organizerId));
+        assertThrows(ForbiddenOperationException.class,
+                () -> activityRequestService.getPendingJoinRequests(requestId, userId));
     }
 
     @Test
-    void staleJoinDecisionCannotAcceptAnotherAttempt() {
-        RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
-        pending.setJoinAttemptId(UUID.randomUUID());
+    void nonOrganizerCannotDecidePendingApplication() {
         foundForUpdate(plannedRequest());
-        Mockito.when(requestParticipantRepository.findByActivityRequestIdAndUserId(requestId, userId))
-                .thenReturn(Optional.of(pending));
+        assertThrows(ForbiddenOperationException.class, () -> activityRequestService.decideJoinRequest(
+                requestId, UUID.randomUUID(), userId, true));
+        Mockito.verifyNoInteractions(requestParticipantRepository);
+    }
 
-        activityRequestService.resolveJoinDecision(new JoinDecisionDto(
-                JoinDecisionDto.TYPE, UUID.randomUUID(), requestId, userId, true));
-
-        assertEquals(ParticipantStatus.PENDING, pending.getStatus());
+    @Test
+    void decidedApplicationCannotBeDecidedAgain() {
+        RequestParticipant accepted = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.ACCEPTED);
+        foundForUpdate(plannedRequest());
+        Mockito.when(requestParticipantRepository.findById(accepted.getId())).thenReturn(Optional.of(accepted));
+        assertThrows(IllegalStateException.class, () -> activityRequestService.decideJoinRequest(
+                requestId, accepted.getId(), organizerId, false));
         Mockito.verify(requestParticipantRepository, Mockito.never()).delete(any());
     }
 
@@ -530,7 +551,6 @@ class ActivityRequestServiceTests {
     @Test
     void leaveRequestWithdrawsPendingAttempt() {
         RequestParticipant pending = participant(userId, ParticipantRole.PLAYER, ParticipantStatus.PENDING);
-        pending.setJoinAttemptId(UUID.randomUUID());
         foundForUpdate(plannedRequest());
         Mockito.when(requestParticipantRepository.findByActivityRequestIdAndUserId(requestId, userId))
                 .thenReturn(Optional.of(pending));

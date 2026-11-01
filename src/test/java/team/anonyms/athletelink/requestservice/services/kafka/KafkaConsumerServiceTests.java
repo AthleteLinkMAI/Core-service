@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import team.anonyms.athletelink.requestservice.dto.kafka.JoinDecisionDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.RequestStatusChangedDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.UserChange;
 import team.anonyms.athletelink.requestservice.dto.kafka.enums.UserChangeType;
@@ -41,14 +40,6 @@ class KafkaConsumerServiceTests {
         consumer.receiveUserChange(json.writeValueAsString(new UserChange(UserChangeType.DELETE, userId)));
         verify(requests).deleteAllByOrganizerId(userId);
         verify(participants).deleteAllByUserId(userId);
-    }
-
-    @Test
-    void joinDecisionIsRoutedByType() throws Exception {
-        var reply = new JoinDecisionDto(JoinDecisionDto.TYPE, UUID.randomUUID(),
-                UUID.randomUUID(), UUID.randomUUID(), true);
-        consumer.receiveGameReply(json.writeValueAsString(reply));
-        verify(service).resolveJoinDecision(reply);
     }
 
     @Test

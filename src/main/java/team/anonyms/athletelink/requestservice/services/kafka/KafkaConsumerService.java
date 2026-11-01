@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.requestservice.dto.kafka.JoinDecisionDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.RequestStatusChangedDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.UserChange;
 import team.anonyms.athletelink.requestservice.dto.kafka.enums.UserChangeType;
@@ -51,8 +50,6 @@ public class KafkaConsumerService {
             throw new IllegalArgumentException("Game Service reply type is required.");
         }
         switch (type) {
-            case JoinDecisionDto.TYPE -> activityRequestService.resolveJoinDecision(
-                    deserialize(payload, JoinDecisionDto.class));
             case RequestStatusChangedDto.TYPE -> activityRequestService.applyGameStatus(
                     deserialize(payload, RequestStatusChangedDto.class));
             default -> log.atWarn()

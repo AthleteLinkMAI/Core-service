@@ -42,15 +42,8 @@ CREATE TABLE request_participants (
     role participant_role NOT NULL,
     status participant_status NOT NULL,
     joined_at TIMESTAMP WITH TIME ZONE,
-    join_attempt_id UUID,
-    CONSTRAINT uq_request_participant_user UNIQUE (request_id, user_id),
-    CONSTRAINT chk_pending_join_attempt
-        CHECK ((status = 'PENDING') = (join_attempt_id IS NOT NULL))
+    CONSTRAINT uq_request_participant_user UNIQUE (request_id, user_id)
 );
-
-CREATE UNIQUE INDEX idx_request_participants_join_attempt
-    ON request_participants (join_attempt_id)
-    WHERE join_attempt_id IS NOT NULL;
 
 CREATE TABLE outbox_events (
     id UUID PRIMARY KEY,

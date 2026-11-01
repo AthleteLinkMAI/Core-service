@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 @OpenAPIDefinition(info = @Info(
         title = "Request Service API",
         version = "v1",
-        description = "Create and manage activity requests before a match starts. Joining is approved asynchronously through Game Service. After a request starts, Game Service owns rounds and results; this API exposes the mirrored request status."
+        description = "Create and manage activity requests before a match starts. Players apply to join; organizers approve or reject those applications directly in Request Service. After a request starts, Game Service owns rounds and results; this API exposes the mirrored request status."
 ))
 public class Main {
 	public static void main(String[] args) {

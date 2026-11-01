@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.requestservice.config.KafkaTopicProperties;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestNotificationDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestStartedDto;
-import team.anonyms.athletelink.requestservice.dto.kafka.NewParticipantDto;
 import team.anonyms.athletelink.requestservice.entities.OutboxEvent;
 import team.anonyms.athletelink.requestservice.repositories.OutboxEventRepository;
 import tools.jackson.databind.ObjectMapper;
@@ -20,11 +19,6 @@ public class KafkaProducerService {
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTopicProperties topics;
     private final ObjectMapper objectMapper;
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void enqueueJoinRequest(NewParticipantDto event) {
-        enqueue(event.eventId(), event.requestId(), topics.gameJoinRequests(), event, "join request");
-    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void enqueueStartedRequest(ActivityRequestStartedDto event) {

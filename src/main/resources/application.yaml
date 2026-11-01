@@ -38,7 +38,6 @@ app:
   kafka:
     topics:
       user-changes: user.changes
-      game-join-requests: game.join.requests
       activity-requests-changes: activity.requests.changes
       game-replies: game.replies
       request-notifications: request.notifications

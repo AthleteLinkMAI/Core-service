@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import team.anonyms.athletelink.requestservice.dto.*;
-import team.anonyms.athletelink.requestservice.dto.kafka.JoinDecisionDto;
-import team.anonyms.athletelink.requestservice.dto.kafka.NewParticipantDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.RequestStatusChangedDto;
 import team.anonyms.athletelink.requestservice.dto.kafka.ActivityRequestStartedDto;
 
@@ -123,11 +121,11 @@ public class ActivityRequestService {
 
 
     /**
-     * Stores a pending join attempt and its outgoing approval request atomically.
+     * Stores a pending join request for the organizer to decide in this service.
      * Business rules:
      * - Cannot join if the request status is not PLANNED.
      * - Cannot join if the player limit (maxPlayers) has been reached.
-     * - A pending request reserves one place until Game Service replies or the player withdraws.
+     * - A pending request reserves one place until the organizer decides or the player withdraws.
      * - If the user was kicked by the organizer (KICKED), rejoining is forbidden.
      *
      * @param requestId ID of the target request
@@ -169,47 +167,51 @@ public class ActivityRequestService {
 
         checkCapacity(request);
 
-        UUID attemptId = UUID.randomUUID();
         RequestParticipant newParticipant = RequestParticipant.builder()
                 .activityRequest(request)
                 .userId(userId)
                 .role(ParticipantRole.PLAYER)
                 .status(ParticipantStatus.PENDING)
-                .joinAttemptId(attemptId)
                 .build();
 
         requestParticipantRepository.save(newParticipant);
-        kafkaProducerService.enqueueJoinRequest(new NewParticipantDto(
-                attemptId, requestId, userId, request.getOrganizerId()));
     }
 
-    /** Applies a Game Service decision only to the still-current pending attempt. */
+    /** Only the organizer can see unresolved join requests. */
+    @Transactional(readOnly = true)
+    public List<PendingJoinRequestDto> getPendingJoinRequests(UUID requestId, UUID organizerId) {
+        ActivityRequest request = activityRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Activity request not found"));
+        validateOrganizer(request, organizerId);
+        if (request.getStatus() != RequestStatus.PLANNED) {
+            throw new IllegalStateException("Join requests can only be viewed before the request starts.");
+        }
+        return requestParticipantRepository.findAllByActivityRequestIdAndStatus(requestId, ParticipantStatus.PENDING)
+                .stream()
+                .map(participant -> new PendingJoinRequestDto(participant.getId(), requestId, participant.getUserId()))
+                .toList();
+    }
+
+    /** Decides exactly one pending participant record, under the request lock. */
     @Transactional
-    public void resolveJoinDecision(JoinDecisionDto decision) {
-        if (decision == null || !JoinDecisionDto.TYPE.equals(decision.type())
-                || decision.eventId() == null || decision.requestId() == null
-                || decision.userId() == null || decision.accepted() == null) {
-            throw new IllegalArgumentException("Malformed join decision.");
+    public void decideJoinRequest(UUID requestId, UUID participantId, UUID organizerId, boolean accepted) {
+        ActivityRequest request = activityRequestRepository.findByIdForUpdate(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Activity request not found"));
+        validateOrganizer(request, organizerId);
+        if (request.getStatus() != RequestStatus.PLANNED) {
+            throw new IllegalStateException("Join requests can only be decided before the request starts.");
         }
-
-        var request = activityRequestRepository.findByIdForUpdate(decision.requestId());
-        if (request.isEmpty()) {
-            return;
+        RequestParticipant participant = requestParticipantRepository.findById(participantId)
+                .filter(candidate -> requestId.equals(candidate.getActivityRequest().getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Join request not found"));
+        if (participant.getStatus() != ParticipantStatus.PENDING) {
+            throw new IllegalStateException("Join request has already been decided.");
         }
-        var participant = requestParticipantRepository.findByActivityRequestIdAndUserId(
-                decision.requestId(), decision.userId());
-        if (participant.isEmpty() || participant.get().getStatus() != ParticipantStatus.PENDING
-                || !decision.eventId().equals(participant.get().getJoinAttemptId())) {
-            return;
-        }
-
-        if (Boolean.TRUE.equals(decision.accepted())
-                && request.get().getStatus() == RequestStatus.PLANNED) {
-            participant.get().setStatus(ParticipantStatus.ACCEPTED);
-            participant.get().setJoinAttemptId(null);
-            participant.get().setJoinedAt(Instant.now());
+        if (accepted) {
+            participant.setStatus(ParticipantStatus.ACCEPTED);
+            participant.setJoinedAt(Instant.now());
         } else {
-            requestParticipantRepository.delete(participant.get());
+            requestParticipantRepository.delete(participant);
         }
     }
 
@@ -329,7 +331,6 @@ public class ActivityRequestService {
         }
 
         targetParticipant.setStatus(ParticipantStatus.KICKED);
-        targetParticipant.setJoinAttemptId(null);
         requestParticipantRepository.save(targetParticipant);
     }
 

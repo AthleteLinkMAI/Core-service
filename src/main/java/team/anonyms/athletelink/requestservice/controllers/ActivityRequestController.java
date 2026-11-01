@@ -77,10 +77,10 @@ public class ActivityRequestController {
     @PostMapping("/{id}/join")
     @Operation(
         summary = "Request to join",
-        description = "Reserves a place in a planned request and sends the organizer's approval request through Game Service. The player remains PENDING until the asynchronous decision arrives. Rejected requests are removed; a player who left must request approval again."
+        description = "Creates a PENDING application for a planned request and reserves one place. The organizer reviews it in Request Service. Approval changes the player to ACCEPTED; rejection removes the application. A player who leaves must apply again."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "202", description = "Approval request queued; the player is PENDING, not yet accepted"),
+            @ApiResponse(responseCode = "202", description = "Application stored as PENDING for organizer review"),
             @ApiResponse(responseCode = "400", description = "Malformed request data", content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "404", description = "Request not found", content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "409", description = "Registration closed, all places reserved, or player already pending, accepted or kicked", content = @Content(schema = @Schema(implementation = ApiError.class)))
@@ -104,7 +104,7 @@ public class ActivityRequestController {
     @PostMapping("/{id}/leave")
     @Operation(
         summary = "Leave request", 
-        description = "Removes an accepted or pending player from a planned request. A later approval for a withdrawn attempt is ignored. Rejoining requires a new approval request; the organizer cannot leave."
+        description = "Removes an accepted or pending player from a planned request. An application withdrawn this way can no longer be approved. Rejoining requires a new application; the organizer cannot leave."
 )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Player left the request"),
