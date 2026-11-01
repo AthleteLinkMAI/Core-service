@@ -1,13 +1,11 @@
-version: '3.8'
-
 services:
-  core-db:
+  request-db:
     image: postgis/postgis:15-3.3
-    container_name: athletelink-core-db
+    container_name: athletelink-request-db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: core_db
+      POSTGRES_DB: request_db
     ports:
       - "5432:5432"
     restart: unless-stopped

@@ -1,15 +1,15 @@
-loki.source.file "core_service" {
+loki.source.file "request_service" {
   targets = [
     {
-      __path__ = "/var/log/core/athletelink-core-service.log",
-      job      = "core-service",
+      __path__ = "/var/log/request/athletelink-request-service.log",
+      job      = "request-service",
     },
   ]
 
-  forward_to = [loki.process.core_service.receiver]
+  forward_to = [loki.process.request_service.receiver]
 }
 
-loki.process "core_service" {
+loki.process "request_service" {
   stage.json {
     expressions = {
       ts    = "\"@timestamp\"",

@@ -5,7 +5,7 @@ stages:
 
 variables:
   DOCKERHUB_USER: kekishev
-  DOCKERHUB_REPOSITORY_NAME: athlete-link-core-service
+  DOCKERHUB_REPOSITORY_NAME: athlete-link-request-service
 
 test-job:
   stage: test
@@ -54,9 +54,9 @@ deploy-job:
   script:
     - ssh -i ~/.ssh/id_ed25519 root@$SSH_REMOTE_HOST "
       cd /root/projects/athletelink &&
-      docker stop  athletelink-backend-core-service-1 || true &&
-      docker rm    athletelink-backend-core-service-1 || true &&
-      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest &&
+      docker stop  athletelink-backend-request-service-1 || true &&
+      docker rm    athletelink-backend-request-service-1 || true &&
+      docker image rm $DOCKERHUB_USER/$DOCKERHUB_REPOSITORY_NAME:latest || true &&
       docker compose up -d
       "
   only:
