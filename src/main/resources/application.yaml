@@ -1,14 +1,11 @@
 spring:
   application:
-    name: core-service
+    name: request-service
   mvc:
     servlet:
       path: /api/v1
-  threads:
-    virtual:
-      enabled: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/core_db
+    url: jdbc:postgresql://localhost:5432/request_db
     username: user
     password: password
     driver-class-name: org.postgresql.Driver
@@ -41,10 +38,13 @@ app:
   kafka:
     topics:
       user-changes: user.changes
-      game-submit-rounds: game.submit.rounds
-      game-close-requests: game.close.requests
+      activity-requests-changes: activity.requests.changes
       game-replies: game.replies
+      request-notifications: request.notifications
     outbox:
+      poll-interval-ms: 1000
+  requests:
+    expiration:
       poll-interval-ms: 1000
 
 springdoc:
@@ -65,7 +65,7 @@ logging:
   level:
     root: INFO
   file:
-    name: /logs/athletelink-core-service.log
+    name: /logs/athletelink-request-service.log
   structured:
     format:
       file: ecs
